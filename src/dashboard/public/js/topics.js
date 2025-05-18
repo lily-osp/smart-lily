@@ -83,30 +83,23 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     // Handle incoming MQTT messages
-    socket.on('mqtt_message', (data) => {
-        console.log('Received message:', data.topic, data.message);
+    socket.on('mqtt-message', (data) => {
+        console.log('Received message:', data.topic, data.payload);
         
         // Ensure message is properly formatted
-        let parsedMessage = data.message;
-        if (typeof data.message === 'string' && (data.message.startsWith('{') || data.message.startsWith('['))) {
-            try {
-                parsedMessage = JSON.parse(data.message);
-            } catch (e) {
-                parsedMessage = data.message;
-            }
-        }
+        let parsedMessage = data.payload;
         
         // Update topics map
         if (!topics.has(data.topic)) {
             topics.set(data.topic, {
                 message: parsedMessage,
-                time: data.time,
+                time: data.timestamp,
                 retained: true // Assume retained for now
             });
         } else {
             const topicData = topics.get(data.topic);
             topicData.message = parsedMessage;
-            topicData.time = data.time;
+            topicData.time = data.timestamp;
         }
         
         // Update the table

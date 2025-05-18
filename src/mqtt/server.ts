@@ -4,13 +4,16 @@ import { createServer as createWebSocketServer } from 'http';
 import ws from 'websocket-stream';
 import logger from '../utils/logger';
 import { config } from '../config';
+import { EventEmitter } from 'events';
 
-export class MqttServer {
+export class MqttServer extends EventEmitter {
   private broker: any;
   private server: any;
   private wsServer: any;
 
   constructor() {
+    super();
+    
     // Create Aedes broker instance
     this.broker = new aedes();
 
@@ -29,17 +32,32 @@ export class MqttServer {
     // Client connected event
     this.broker.on('client', (client: any) => {
       logger.info(`Client connected: ${client.id}`);
+      // Emit event for other components to react to
+      this.emit('client_connected', { clientId: client.id });
     });
 
     // Client disconnected event
     this.broker.on('clientDisconnect', (client: any) => {
       logger.info(`Client disconnected: ${client.id}`);
+      // Emit event for other components to react to
+      this.emit('client_disconnected', { clientId: client.id });
     });
 
     // Published event
     this.broker.on('publish', (packet: any, client: any) => {
       if (client) {
         logger.debug(`Client ${client.id} published to ${packet.topic}`);
+        
+        // Emit message event for other components to react to
+        const payload = packet.payload ? packet.payload.toString() : '';
+        this.emit('message', {
+          topic: packet.topic,
+          payload: payload,
+          qos: packet.qos,
+          retain: packet.retain,
+          clientId: client.id,
+          timestamp: new Date().toISOString()
+        });
       }
     });
 
@@ -48,6 +66,11 @@ export class MqttServer {
       if (client) {
         const topics = subscriptions.map((s: any) => s.topic).join(', ');
         logger.debug(`Client ${client.id} subscribed to ${topics}`);
+        // Emit event for other components to react to
+        this.emit('client_subscribe', { 
+          clientId: client.id, 
+          topics: subscriptions.map((s: any) => s.topic) 
+        });
       }
     });
 

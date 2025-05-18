@@ -4,6 +4,7 @@ import path from 'path';
 import { Server as SocketIOServer } from 'socket.io';
 import logger from '../utils/logger';
 import { MqttClient } from '../mqtt/client';
+import { MqttServer } from '../mqtt/server';
 import { config } from '../config';
 import { AutomationService, AutomationRule, Condition, Action } from '../utils/automation';
 import { v4 as uuidv4 } from 'uuid';
@@ -17,6 +18,7 @@ export class DashboardServer {
   private io: SocketIOServer;
   private port: number;
   private mqttClient: MqttClient;
+  private mqttServer?: MqttServer;
   private automationService!: AutomationService;
   private webhookService!: WebhookService;
   
@@ -28,8 +30,9 @@ export class DashboardServer {
   private messageCount: number = 0;
   private startTime: number = Date.now();
 
-  constructor(port: number = config.dashboard.port) {
+  constructor(port: number = config.dashboard.port, mqttServer?: MqttServer) {
     this.port = port;
+    this.mqttServer = mqttServer;
     
     // Create Express app
     this.app = express();
@@ -40,7 +43,10 @@ export class DashboardServer {
     
     // Configure static files and views
     this.app.use(express.static(path.join(__dirname, 'public')));
-    this.app.set('views', path.join(__dirname, 'views'));
+    
+    // Fix views path to correctly point to views directory after compilation
+    const viewsPath = path.join(__dirname, '..', '..', 'src', 'dashboard', 'views');
+    this.app.set('views', viewsPath);
     this.app.set('view engine', 'ejs');
     
     // Create HTTP server
@@ -60,6 +66,13 @@ export class DashboardServer {
     // Set up routes and socket events
     this.setupRoutes();
     this.setupSocketEvents();
+    
+    // Set up MQTT server event handlers if provided
+    if (this.mqttServer) {
+      this.setupMqttServerEvents();
+    }
+    
+    // Set up MQTT client monitoring
     this.setupMqttMonitoring();
   }
 
@@ -627,12 +640,121 @@ export class DashboardServer {
     });
   }
 
+  private setupMqttServerEvents() {
+    if (!this.mqttServer) return;
+    
+    logger.info('Setting up MQTT server event handlers');
+    
+    // Client connected event
+    this.mqttServer.on('client_connected', (data: { clientId: string }) => {
+      logger.info(`MQTT client connected: ${data.clientId}`);
+      
+      // Add to connected clients list if not already there
+      if (!this.connectedClients.includes(data.clientId)) {
+        this.connectedClients.push(data.clientId);
+        logger.debug(`Added client to list: ${data.clientId}, total clients: ${this.connectedClients.length}`);
+      }
+      
+      // Forward to Socket.IO clients
+      this.io.emit('client_connected', data);
+      
+      // Trigger webhook event for connection
+      this.webhookService.triggerEvent('connection', {
+        clientId: data.clientId,
+        timestamp: new Date().toISOString()
+      }).catch(err => {
+        logger.warn(`Failed to trigger connection webhook: ${err.message}`);
+      });
+    });
+    
+    // Client disconnected event
+    this.mqttServer.on('client_disconnected', (data: { clientId: string }) => {
+      logger.info(`MQTT client disconnected: ${data.clientId}`);
+      
+      // Remove from connected clients list
+      this.connectedClients = this.connectedClients.filter(id => id !== data.clientId);
+      logger.debug(`Removed client from list: ${data.clientId}, total clients: ${this.connectedClients.length}`);
+      
+      // Forward to Socket.IO clients
+      this.io.emit('client_disconnected', data);
+      
+      // Trigger webhook event for disconnection
+      this.webhookService.triggerEvent('disconnection', {
+        clientId: data.clientId,
+        timestamp: new Date().toISOString()
+      }).catch(err => {
+        logger.warn(`Failed to trigger disconnection webhook: ${err.message}`);
+      });
+    });
+    
+    // Message event from MQTT server
+    this.mqttServer.on('message', async (data: { topic: string, payload: string, qos: number, retain: boolean, clientId: string, timestamp: string }) => {
+      // Update message count
+      this.messageCount++;
+      
+      try {
+        // Try to parse message as JSON
+        let parsedMessage;
+        try {
+          parsedMessage = JSON.parse(data.payload);
+        } catch (e) {
+          parsedMessage = data.payload;
+        }
+        
+        // Update active topics map
+        if (!this.activeTopics.has(data.topic)) {
+          this.activeTopics.set(data.topic, { count: 0, lastMessage: parsedMessage });
+        } else {
+          const topicData = this.activeTopics.get(data.topic)!;
+          topicData.lastMessage = parsedMessage;
+          this.activeTopics.set(data.topic, topicData);
+        }
+        
+        const messageData = {
+          topic: data.topic,
+          payload: parsedMessage,
+          timestamp: data.timestamp,
+          retain: data.retain,
+          qos: data.qos
+        };
+
+        // Emit message event to Socket.IO clients
+        this.io.emit('mqtt-message', messageData);
+        
+        // Log for debugging
+        logger.info(`Emitting mqtt-message event for ${data.topic}`);
+        logger.info(`Message payload: ${typeof messageData.payload === 'object' ? JSON.stringify(messageData.payload) : messageData.payload}`);
+        
+        // Save message to database for history
+        try {
+          await MessageHistoryRepository.saveMessage(data.topic, data.payload, {
+            retain: data.retain,
+            qos: data.qos
+          });
+        } catch (dbError) {
+          logger.warn(`Failed to save message to database: ${dbError instanceof Error ? dbError.message : 'Unknown error'}`);
+          // Continue even if database save fails
+        }
+        
+        // Trigger webhook events for this topic
+        try {
+          await this.webhookService.triggerEvent('message', messageData);
+        } catch (webhookError) {
+          logger.warn(`Failed to trigger webhook: ${webhookError instanceof Error ? webhookError.message : 'Unknown error'}`);
+          // Continue even if webhook trigger fails
+        }
+        
+      } catch (error) {
+        if (error instanceof Error) {
+          logger.error(`Error processing MQTT message from server: ${error.message}`);
+        }
+      }
+    });
+  }
+
   private async setupMqttMonitoring() {
     try {
-      // Initialize the database
-      await initializeDatabase();
-      
-      // Connect the MQTT client
+      // Connect the MQTT client first
       await this.mqttClient.connect();
       
       // Initialize the automation service
@@ -647,80 +769,121 @@ export class DashboardServer {
       // Subscribe to wildcard topic to monitor all messages
       await this.mqttClient.subscribe('#');
       
-      // Get all automation rules from the database and add them to the service
-      const rules = await AutomationRuleRepository.getAllRules();
-      rules.forEach(rule => {
-        this.automationService.addRule(rule);
-      });
-      
       // Set up automation service event handlers
       this.setupAutomationEvents();
       
-      // Handle incoming messages
-      this.mqttClient.getClient().on('message', async (topic, message, packet) => {
-        // Update message count
-        this.messageCount++;
-        
-        try {
-          // Try to parse message as JSON
-          let parsedMessage;
+      // Handle incoming messages - only needed if MQTT server integration is not available
+      if (!this.mqttServer) {
+        this.mqttClient.getClient().on('message', async (topic, message, packet) => {
+          // Update message count
+          this.messageCount++;
+          
           try {
-            parsedMessage = JSON.parse(message.toString());
-          } catch (e) {
-            parsedMessage = message.toString();
+            // Try to parse message as JSON
+            let parsedMessage;
+            try {
+              parsedMessage = JSON.parse(message.toString());
+            } catch (e) {
+              parsedMessage = message.toString();
+            }
+            
+            // Update active topics map
+            if (!this.activeTopics.has(topic)) {
+              this.activeTopics.set(topic, { count: 0, lastMessage: parsedMessage });
+            } else {
+              const topicData = this.activeTopics.get(topic)!;
+              topicData.lastMessage = parsedMessage;
+              this.activeTopics.set(topic, topicData);
+            }
+            
+            const messageData = {
+              topic,
+              payload: parsedMessage,
+              timestamp: new Date().toISOString(),
+              retain: packet.retain,
+              qos: packet.qos
+            };
+
+            // Emit message event to Socket.IO clients
+            this.io.emit('mqtt-message', messageData);
+            
+            // Log for debugging
+            logger.debug(`Emitting mqtt-message event for ${topic}`);
+            
+            // Save message to database for history
+            try {
+              await MessageHistoryRepository.saveMessage(topic, message.toString(), {
+                retain: packet.retain,
+                qos: packet.qos
+              });
+            } catch (dbError) {
+              logger.warn(`Failed to save message to database: ${dbError instanceof Error ? dbError.message : 'Unknown error'}`);
+              // Continue even if database save fails
+            }
+            
+            // Trigger webhook events for this topic
+            try {
+              await this.webhookService.triggerEvent('message', messageData);
+            } catch (webhookError) {
+              logger.warn(`Failed to trigger webhook: ${webhookError instanceof Error ? webhookError.message : 'Unknown error'}`);
+              // Continue even if webhook trigger fails
+            }
+            
+          } catch (error) {
+            if (error instanceof Error) {
+              logger.error(`Error processing MQTT message: ${error.message}`);
+            }
           }
-          
-          // Update active topics map
-          if (!this.activeTopics.has(topic)) {
-            this.activeTopics.set(topic, { count: 0, lastMessage: parsedMessage });
-          } else {
-            const topicData = this.activeTopics.get(topic)!;
-            topicData.lastMessage = parsedMessage;
-            this.activeTopics.set(topic, topicData);
-          }
-          
-          // Emit message event to Socket.IO clients
-          this.io.emit('mqtt-message', {
-            topic,
-            payload: parsedMessage,
-            timestamp: new Date().toISOString()
-          });
-          
-          // Save message to database for history
-          await MessageHistoryRepository.saveMessage(topic, message.toString(), {
-            retain: packet.retain,
-            qos: packet.qos
-          });
-          
-          // Trigger webhook events for this topic
-          await this.webhookService.triggerEvent('message', {
-            topic,
-            payload: parsedMessage,
-            retain: packet.retain,
-            qos: packet.qos
-          });
-          
-        } catch (error) {
-          if (error instanceof Error) {
-            logger.error(`Error processing MQTT message: ${error.message}`);
-          }
-        }
-      });
+        });
+      }
       
       // Handle client connected events
       this.mqttClient.getClient().on('connect', () => {
         logger.info('Dashboard MQTT client connected');
         
+        // Add to connected clients list if not using MQTT server events
+        if (!this.mqttServer) {
+          if (!this.connectedClients.includes('dashboard-monitor')) {
+            this.connectedClients.push('dashboard-monitor');
+            // Update UI
+            this.io.emit('client_connected', { clientId: 'dashboard-monitor' });
+          }
+        }
+        
+        // Add to connected clients list if not using MQTT server events
+        if (!this.mqttServer) {
+          if (!this.connectedClients.includes('dashboard-monitor')) {
+            this.connectedClients.push('dashboard-monitor');
+          }
+        }
+        
         // Trigger webhook event for connection
         this.webhookService.triggerEvent('connection', {
           clientId: 'dashboard-monitor',
           timestamp: new Date().toISOString()
+        }).catch(err => {
+          logger.warn(`Failed to trigger connection webhook: ${err.message}`);
         });
       });
+      
+      // Try to load automation rules - do this after everything else is initialized
+      try {
+        // Get all automation rules from the database and add them to the service
+        const rules = await AutomationRuleRepository.getAllRules();
+        rules.forEach(rule => {
+          this.automationService.addRule(rule);
+        });
+        logger.info(`Loaded ${rules.length} automation rules from database`);
+      } catch (rulesError) {
+        logger.error(`Failed to load automation rules: ${rulesError instanceof Error ? rulesError.message : 'Unknown error'}`);
+        // Continue without rules if loading fails - they can be added later
+      }
       
     } catch (error) {
       if (error instanceof Error) {
         logger.error(`Failed to set up MQTT monitoring: ${error.message}`);
+      } else {
+        logger.error('Failed to set up MQTT monitoring: Unknown error');
       }
     }
   }

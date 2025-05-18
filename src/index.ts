@@ -39,7 +39,7 @@ function startServers() {
   const mqttServer = new MqttServer();
 
   // Create the Dashboard server (default port 3000)
-  const dashboardServer = new DashboardServer();
+  const dashboardServer = new DashboardServer(config.dashboard.port, mqttServer);
 
   // Create the System Topics Manager
   const systemTopicsManager = new SystemTopicsManager();

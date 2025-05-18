@@ -1,28 +1,60 @@
-import { DataSource } from 'typeorm';
+import { DataSource, Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 import path from 'path';
 import { AutomationRule, Condition, Action } from './automation';
 import logger from './logger';
 
 // Define entities for TypeORM
+@Entity()
 export class MessageHistory {
+  @PrimaryGeneratedColumn()
   id!: number;
+
+  @Column()
   topic!: string;
+
+  @Column()
   payload!: string;
+
+  @Column()
   timestamp!: Date;
+
+  @Column()
   retain!: boolean;
+
+  @Column()
   qos!: number;
 }
 
+@Entity()
 export class AutomationRuleEntity {
+  @PrimaryGeneratedColumn("uuid")
   id!: string;
+
+  @Column()
   name!: string;
+
+  @Column({ nullable: true })
   description?: string;
+
+  @Column()
   enabled!: boolean;
+
+  @Column()
   conditions!: string; // JSON stringified conditions
+
+  @Column()
   actions!: string; // JSON stringified actions
+
+  @Column()
   logicOperator!: string;
+
+  @Column()
   createdAt!: number;
+
+  @Column()
   updatedAt!: number;
+
+  @Column({ nullable: true })
   lastTriggered?: number;
 }
 
@@ -43,6 +75,12 @@ export async function initializeDatabase() {
     const dataDir = path.join(process.cwd(), 'data');
     if (!fs.existsSync(dataDir)) {
       fs.mkdirSync(dataDir);
+    }
+
+    // Check if connection is already initialized
+    if (AppDataSource.isInitialized) {
+      logger.info('Database already initialized');
+      return true;
     }
 
     await AppDataSource.initialize();

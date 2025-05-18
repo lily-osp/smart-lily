@@ -20,10 +20,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const dynamicTopicCardsContainer = document.getElementById('dynamic-topic-cards');
     const topicCardTemplate = document.getElementById('topic-card-template');
     
-    // Verify that all DOM elements are found
+    // Debug logging to check if all DOM elements are found
     console.log('Uptime element found:', !!uptimeElement);
     console.log('Dynamic topic cards container found:', !!dynamicTopicCardsContainer);
     console.log('Topic card template found:', !!topicCardTemplate);
+    console.log('Topic list element found:', !!topicList);
+    console.log('Client list element found:', !!clientList);
     
     // System topic elements
     const systemTimeIso = document.getElementById('system-time-iso');
@@ -190,16 +192,21 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     // Handle incoming MQTT messages
-    socket.on('mqtt_message', (data) => {
-        console.log('Received message:', data.topic, data.message);
+    socket.on('mqtt-message', (data) => {
+        console.log('Received MQTT message:', data);
+        console.log('Message topic:', data.topic);
+        console.log('Message payload:', data.payload);
+        console.log('Message type:', typeof data.payload);
         
         // Ensure message is properly formatted
-        let parsedMessage = data.message;
-        if (typeof data.message === 'string' && (data.message.startsWith('{') || data.message.startsWith('['))) {
+        let parsedMessage = data.payload;
+        if (typeof data.payload === 'string' && (data.payload.startsWith('{') || data.payload.startsWith('['))) {
             try {
-                parsedMessage = JSON.parse(data.message);
+                parsedMessage = JSON.parse(data.payload);
+                console.log('Successfully parsed message as JSON:', parsedMessage);
             } catch (e) {
-                parsedMessage = data.message;
+                console.log('Failed to parse message as JSON:', e);
+                parsedMessage = data.payload;
             }
         }
         
@@ -207,7 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
         addMessage({
             topic: data.topic,
             message: parsedMessage,
-            time: data.time
+            time: data.timestamp
         });
         
         // Update topics
@@ -217,7 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // Add to topic history
-        addToTopicHistory(data.topic, parsedMessage, data.time);
+        addToTopicHistory(data.topic, parsedMessage, data.timestamp);
         
         // Handle system topics
         if (isSystemTopic(data.topic)) {
@@ -226,14 +233,16 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             // Handle dynamic topics - everything that's not a system topic
             console.log('Processing dynamic topic:', data.topic);
-            handleDynamicTopic(data.topic, parsedMessage, data.time);
+            handleDynamicTopic(data.topic, parsedMessage, data.timestamp);
         }
     });
     
     // Handle client connections
     socket.on('client_connected', (data) => {
+        console.log('Client connected event received:', data);
         if (!clients.includes(data.clientId)) {
             clients.push(data.clientId);
+            console.log('Updated clients list:', clients);
             updateClientList();
         }
         
@@ -247,7 +256,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Handle client disconnections
     socket.on('client_disconnected', (data) => {
+        console.log('Client disconnected event received:', data);
         clients = clients.filter(id => id !== data.clientId);
+        console.log('Updated clients list after disconnect:', clients);
         updateClientList();
         
         addMessage({
@@ -277,54 +288,64 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     // Form handlers
-    publishForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        
-        const topic = document.getElementById('pub-topic').value;
-        const message = document.getElementById('pub-message').value;
-        const retain = document.getElementById('retain-flag').checked;
-        
-        // Try to parse as JSON if possible
-        let messageToSend = message;
-        try {
-            // Check if the message is valid JSON
-            const parsed = JSON.parse(message);
-            messageToSend = parsed;
-        } catch (e) {
-            // If not valid JSON, send as plain text
-            messageToSend = message;
-        }
-        
-        // Send to server
-        socket.emit('publish', {
-            topic,
-            message: messageToSend,
-            retain
+    if (publishForm) {
+        publishForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const topic = document.getElementById('pub-topic').value;
+            const message = document.getElementById('pub-message').value;
+            const retain = document.getElementById('retain-flag').checked;
+            
+            // Try to parse as JSON if possible
+            let messageToSend = message;
+            try {
+                // Check if the message is valid JSON
+                const parsed = JSON.parse(message);
+                messageToSend = parsed;
+            } catch (e) {
+                // If not valid JSON, send as plain text
+                messageToSend = message;
+            }
+            
+            // Send to server
+            socket.emit('publish', {
+                topic,
+                message: messageToSend,
+                retain
+            });
         });
-    });
+    }
     
-    subscribeForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        
-        const topic = document.getElementById('sub-topic').value;
-        
-        // Send to server
-        socket.emit('subscribe', { topic });
-    });
+    if (subscribeForm) {
+        subscribeForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const topic = document.getElementById('sub-topic').value;
+            
+            // Send to server
+            socket.emit('subscribe', { topic });
+        });
+    }
     
     // Clear messages
-    clearMessagesBtn.addEventListener('click', () => {
-        messages = [];
-        messageList.innerHTML = '';
-    });
+    if (clearMessagesBtn) {
+        clearMessagesBtn.addEventListener('click', () => {
+            messages = [];
+            messageList.innerHTML = '';
+        });
+    }
     
     // Filter messages by topic
-    topicFilter.addEventListener('input', () => {
-        renderMessages();
-    });
+    if (topicFilter) {
+        topicFilter.addEventListener('input', () => {
+            renderMessages();
+        });
+    }
     
     // Helper functions
     function setConnectionStatus(status) {
+        if (!statusBadge) return;
+        
         statusBadge.innerHTML = status === 'connected' ? 
             '<i class="fas fa-plug me-1"></i>Connected' : 
             (status === 'disconnected' ? 
@@ -359,7 +380,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function renderMessages() {
-        const filter = topicFilter.value.toLowerCase();
+        if (!messageList) return;
+        
+        const filter = topicFilter ? topicFilter.value.toLowerCase() : '';
         
         const filteredMessages = filter ? 
             messages.filter(msg => msg.topic.toLowerCase().includes(filter)) : 
@@ -404,10 +427,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         // Update message count
-        messageCountElement.textContent = messages.length;
+        if (messageCountElement) {
+            messageCountElement.textContent = messages.length;
+        }
     }
     
     function updateClientList() {
+        if (!clientList) return;
+        
         clientList.innerHTML = '';
         
         if (clients.length === 0) {
@@ -426,10 +453,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         // Update client count
-        clientCountElement.textContent = clients.length;
+        if (clientCountElement) {
+            clientCountElement.textContent = clients.length;
+        }
     }
     
     function updateTopicList() {
+        if (!topicList) return;
+        
         topicList.innerHTML = '';
         
         if (topics.size === 0) {
@@ -453,8 +484,10 @@ document.addEventListener('DOMContentLoaded', () => {
             subscribeBtn.className = 'btn btn-sm btn-outline-secondary';
             subscribeBtn.textContent = 'Filter';
             subscribeBtn.addEventListener('click', () => {
-                topicFilter.value = topic;
-                renderMessages();
+                if (topicFilter) {
+                    topicFilter.value = topic;
+                    renderMessages();
+                }
             });
             
             li.appendChild(topicText);
@@ -463,7 +496,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         // Update topic count
-        topicCountElement.textContent = topics.size;
+        if (topicCountElement) {
+            topicCountElement.textContent = topics.size;
+        }
     }
     
     function formatTime(timeString) {
@@ -675,11 +710,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleDynamicTopic(topic, message, timestamp) {
         // Skip system topics and empty topics
         if (isSystemTopic(topic) || !topic || topic === '') {
+            console.log('Skipping system or empty topic:', topic);
             return;
         }
         
         console.log('Handling dynamic topic:', topic);
         console.log('Message content:', typeof message === 'object' ? JSON.stringify(message) : message);
+        console.log('Active topics before processing:', Array.from(topics.keys()));
+        console.log('Dynamic topic cards before processing:', Array.from(dynamicTopicCards.keys()));
         
         // Parse string messages that should be JSON
         if (typeof message === 'string' && (message.startsWith('{') || message.startsWith('['))) {
@@ -705,11 +743,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // Create a dynamic topic card
     function createDynamicTopicCard(topic, message) {
         console.log('Creating dynamic card for topic:', topic);
+        
+        if (!dynamicTopicCardsContainer || !topicCardTemplate) {
+            console.error('Cannot create card: Missing container or template. Container:', !!dynamicTopicCardsContainer, 'Template:', !!topicCardTemplate);
+            return;
+        }
 
         // Clone the template
         const template = document.getElementById('topic-card-template');
         if (!template) {
             console.error('Topic card template not found');
+            return;
+        }
+
+        // Check if content can be cloned
+        if (!template.content) {
+            console.error('Template content is not available - template may not be properly defined');
             return;
         }
 
