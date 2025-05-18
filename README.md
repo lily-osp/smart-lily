@@ -3,7 +3,7 @@
 A fully-featured MQTT server built with TypeScript, providing a complete solution for IoT device management, messaging, and automation.
 
 <p align="center">
-  <img src="https://via.placeholder.com/150?text=Smart+Lily" alt="Smart Lily Logo" width="150" height="150">
+  <img src="https://placehold.co/150x150?text=smart+lily" alt="Smart Lily Logo" width="150" height="150">
 </p>
 
 ## Table of Contents
@@ -132,7 +132,7 @@ Smart Lily consists of several core components:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/smart-lily.git
+git clone https://github.com/lily-osp/smart-lily.git
 cd smart-lily
 
 # Install dependencies
