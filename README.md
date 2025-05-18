@@ -24,6 +24,7 @@ A fully-featured MQTT server built with TypeScript, providing a complete solutio
     - [Webhooks Integration](#webhooks-integration)
     - [Code Examples](#code-examples)
   - [Testing with the Client](#testing-with-the-client)
+  - [Using Diagnostic Tools](#using-diagnostic-tools)
 - [MQTT Client Library](#mqtt-client-library)
   - [Basic Usage](#basic-usage)
   - [Advanced Options](#advanced-options)
@@ -95,6 +96,13 @@ Smart Lily MQTT Server is a comprehensive platform for IoT messaging and device 
   - Python client examples
   - Node.js integration examples
   - Web browser MQTT client examples
+
+- **Diagnostic Tools**
+  - Socket.IO diagnostic page for testing connectivity
+  - Test publishing script for MQTT message testing
+  - Enhanced logging for troubleshooting
+  - Debug page with live event monitoring
+  - Visual event tracing in browser
 
 - **Administration**
   - Configurable via environment variables
@@ -239,6 +247,47 @@ This will:
 2. Subscribe to a test topic
 3. Publish a message to the topic
 4. Demonstrate the message being received
+
+### Using Diagnostic Tools
+
+Smart Lily includes several diagnostic tools to help troubleshoot issues:
+
+#### Socket.IO Diagnostic Page
+
+Access the Socket.IO diagnostic tool at:
+
+```
+http://localhost:3000/test-socket
+```
+
+This page will:
+- Test Socket.IO connection to the server
+- Display all events received in real-time
+- Allow you to send test messages
+- Show detailed event information
+
+#### MQTT Test Publisher
+
+Run the MQTT test publisher to verify MQTT broker functionality:
+
+```bash
+npx ts-node src/test-publish.ts
+```
+
+This script will:
+- Connect to the MQTT broker
+- Publish test messages to various topics
+- Verify connection and publishing capabilities
+
+#### Debug Page
+
+Access the debug page at:
+
+```
+http://localhost:3000/debug
+```
+
+This page provides a simplified interface for seeing MQTT messages without the full dashboard UI.
 
 ## MQTT Client Library
 
@@ -412,11 +461,39 @@ Security recommendations:
 
 Common issues and solutions:
 
-- **Can't connect to MQTT server**: Check that ports 1883/8883 are open and not blocked by a firewall
-- **Dashboard shows no connection**: Ensure WebSocket connections are allowed if behind a proxy
-- **High memory usage**: Check for retained messages with large payloads
-- **Automation rules not triggering**: Verify topic names and condition logic
-- **Database errors**: Check file permissions for the data directory
+- **Can't connect to MQTT server**: 
+  - Check that ports 1883/8883 are open and not blocked by a firewall
+  - Ensure you're using 127.0.0.1 (not 0.0.0.0) for local connections
+  - Verify the MQTT broker is running with `ss -tulnp | grep node`
+
+- **Dashboard shows no connection**: 
+  - Ensure WebSocket connections are allowed if behind a proxy
+  - Check browser console for Socket.IO connection errors
+  - Use the Socket.IO diagnostic page at `/test-socket` to verify connectivity
+
+- **Socket.IO connection issues**:
+  - Enable debug logging with `localStorage.debug = '*'` in browser console
+  - Check for CORS issues if connecting from a different domain
+  - Verify the Socket.IO server is properly initialized
+
+- **MQTT messages not appearing in dashboard**:
+  - Check that the topics match exactly (case-sensitive)
+  - Verify message format (use valid JSON if expected)
+  - Use the test publisher script to verify broker functionality
+  - Check server logs for message processing errors
+
+- **High memory usage**: 
+  - Check for retained messages with large payloads
+  - Monitor client connection count for abnormal growth
+
+- **Automation rules not triggering**: 
+  - Verify topic names and condition logic
+  - Check rule status (enabled/disabled)
+  - Inspect logs for rule evaluation
+
+- **Database errors**: 
+  - Check file permissions for the data directory
+  - Verify SQLite is properly installed
 
 ## Contributing
 

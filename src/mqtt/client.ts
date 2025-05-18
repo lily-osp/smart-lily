@@ -23,7 +23,11 @@ export class MqttClient {
         reconnectPeriod: 1000,
       };
 
-      let url = `mqtt://${config.mqtt.host}:${config.mqtt.port}`;
+      // Use 127.0.0.1 for client connections instead of 0.0.0.0
+      // This ensures clients can connect to the server running on the local machine
+      const clientHost = config.mqtt.host === '0.0.0.0' ? '127.0.0.1' : config.mqtt.host;
+      let url = `mqtt://${clientHost}:${config.mqtt.port}`;
+      
       let mqttOptions = { ...defaultOptions };
 
       // Handle both function signatures:
@@ -37,6 +41,8 @@ export class MqttClient {
       } else if (optionsOrUrl) {
         mqttOptions = { ...defaultOptions, ...optionsOrUrl };
       }
+
+      logger.info(`Attempting to connect to MQTT server at ${url}`);
 
       // Connect to the MQTT server
       this.client = mqtt.connect(url, mqttOptions);

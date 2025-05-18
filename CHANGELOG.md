@@ -4,6 +4,21 @@ All notable changes to the Smart Lily MQTT Server will be documented in this fil
 
 ## [Unreleased]
 
+### Added
+- Socket.IO diagnostic tool (`/test-socket`) for connectivity testing
+- Test MQTT publisher script (`test-publish.ts`) for verifying message flow
+- Enhanced logging for Socket.IO events and MQTT message processing
+- More detailed error reporting for connection issues
+
+### Fixed
+- TypeScript compilation errors in DashboardServer class
+- MQTT client connection issues by ensuring 127.0.0.1 is used for local connections
+- Socket.IO message forwarding from MQTT broker to browser clients
+- Improved error handling in MQTT message processing
+- Issues with duplicate route definitions
+- Dashboard message display and dynamic topic card generation
+- Browser compatibility issues with topic card templates
+
 ## [1.1.0] - 2023-07-20
 
 ### Added

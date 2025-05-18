@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MQTT Dashboard Debug</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        
+        h1 {
+            background-color: #333;
+            color: white;
+            padding: 20px;
+            margin: 0;
+        }
+        
+        .info {
+            padding: 15px;
+            background-color: #e9f7fe;
+            border-left: 5px solid #2196F3;
+            margin: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>MQTT Dashboard Debug Page</h1>
+    
+    <div class="info">
+        <p>This is a simple debug page for the MQTT dashboard. It will display Socket.IO connection status and MQTT messages received.</p>
+        <p>Check the console for additional diagnostic information.</p>
+    </div>
+    
+    <!-- Socket.IO is loaded from the server -->
+    <script src="/socket.io/socket.io.js"></script>
+    
+    <!-- Our diagnostic client -->
+    <script src="/js/simple-client.js"></script>
+</body>
+</html> 

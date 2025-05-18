@@ -52,8 +52,16 @@ export class DashboardServer {
     // Create HTTP server
     this.server = http.createServer(this.app);
     
-    // Create Socket.IO server
-    this.io = new SocketIOServer(this.server);
+    // Create Socket.IO server with CORS allowed
+    this.io = new SocketIOServer(this.server, {
+      cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+      },
+      transports: ['websocket', 'polling']
+    });
+    
+    logger.info('Socket.IO server configured with CORS and transports');
     
     // Create MQTT client for monitoring
     this.mqttClient = new MqttClient('dashboard-monitor');
@@ -126,6 +134,26 @@ export class DashboardServer {
     this.app.get('/webhooks', (req: Request, res: Response) => {
       res.render('webhooks', {
         title: 'MQTT Webhooks',
+        port: config.mqtt.port,
+        wsPort: config.mqtt.wsPort
+      });
+    });
+    
+    // Debug page
+    this.app.get('/debug', (req: Request, res: Response) => {
+      logger.info('Debug page requested');
+      res.render('debug', {
+        title: 'MQTT Dashboard Debug',
+        port: config.mqtt.port,
+        wsPort: config.mqtt.wsPort
+      });
+    });
+    
+    // Socket.IO Test page
+    this.app.get('/test-socket', (req: Request, res: Response) => {
+      logger.info('Socket.IO test page requested');
+      res.render('test-socket', {
+        title: 'Socket.IO Diagnostic Tool',
         port: config.mqtt.port,
         wsPort: config.mqtt.wsPort
       });
@@ -572,15 +600,38 @@ export class DashboardServer {
       this.automationService.disableRule(ruleId);
       res.json({ success: true, id: ruleId, enabled: false });
     });
+
+    // API routes
+    this.app.get('/api/system-stats', this.getSystemStats.bind(this));
   }
 
   private setupSocketEvents() {
     this.io.on('connection', (socket) => {
       logger.info(`Dashboard client connected: ${socket.id}`);
       
+      // Debug: Log all connected sockets
+      const connectedSockets = Array.from(this.io.sockets.sockets).map(s => s[0]);
+      logger.info(`Currently connected sockets: ${connectedSockets.length} - ${connectedSockets.join(', ')}`);
+      
+      // Debug: enhance the emit method to log all events
+      const originalEmit = socket.emit;
+      socket.emit = function(event: string, ...args: any[]) {
+        try {
+          logger.debug(`[Socket ${socket.id}] Emitting event "${event}" with data: ${
+            args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : arg).join(', ')
+          }`);
+        } catch (error) {
+          logger.debug(`[Socket ${socket.id}] Emitting event "${event}" (failed to stringify data)`);
+        }
+        return originalEmit.apply(this, [event, ...args]);
+      };
+      
       // Handle client publishing message
       socket.on('publish', async (data: { topic: string, message: string, retain?: boolean }) => {
         try {
+          logger.info(`[Socket ${socket.id}] Received publish request for topic: ${data.topic}`);
+          logger.debug(`[Socket ${socket.id}] Publish data: ${JSON.stringify(data)}`);
+          
           await this.mqttClient.publish(data.topic, data.message, { 
             retain: data.retain || false 
           });
@@ -597,6 +648,8 @@ export class DashboardServer {
       // Handle client subscribing to topic
       socket.on('subscribe', async (data: { topic: string }) => {
         try {
+          logger.info(`[Socket ${socket.id}] Received subscribe request for topic: ${data.topic}`);
+          
           await this.mqttClient.subscribe(data.topic);
           logger.info(`Subscribed to ${data.topic} from dashboard`);
           socket.emit('subscribe_success', { topic: data.topic });
@@ -656,6 +709,7 @@ export class DashboardServer {
       }
       
       // Forward to Socket.IO clients
+      logger.debug(`Broadcasting client_connected event for ${data.clientId} to all Socket.IO clients`);
       this.io.emit('client_connected', data);
       
       // Trigger webhook event for connection
@@ -676,6 +730,7 @@ export class DashboardServer {
       logger.debug(`Removed client from list: ${data.clientId}, total clients: ${this.connectedClients.length}`);
       
       // Forward to Socket.IO clients
+      logger.debug(`Broadcasting client_disconnected event for ${data.clientId} to all Socket.IO clients`);
       this.io.emit('client_disconnected', data);
       
       // Trigger webhook event for disconnection
@@ -697,17 +752,21 @@ export class DashboardServer {
         let parsedMessage;
         try {
           parsedMessage = JSON.parse(data.payload);
+          logger.debug(`Successfully parsed message as JSON: ${JSON.stringify(parsedMessage)}`);
         } catch (e) {
           parsedMessage = data.payload;
+          logger.debug(`Message is not JSON: ${data.payload}`);
         }
         
         // Update active topics map
         if (!this.activeTopics.has(data.topic)) {
           this.activeTopics.set(data.topic, { count: 0, lastMessage: parsedMessage });
+          logger.info(`New topic discovered: ${data.topic}, total topics: ${this.activeTopics.size}`);
         } else {
           const topicData = this.activeTopics.get(data.topic)!;
           topicData.lastMessage = parsedMessage;
           this.activeTopics.set(data.topic, topicData);
+          logger.debug(`Updated existing topic: ${data.topic}`);
         }
         
         const messageData = {
@@ -718,12 +777,17 @@ export class DashboardServer {
           qos: data.qos
         };
 
+        // Debug log connected sockets
+        const connectedSockets = Array.from(this.io.sockets.sockets).map(s => s[0]);
+        logger.debug(`Broadcasting mqtt-message to ${connectedSockets.length} sockets: ${connectedSockets.join(', ')}`);
+
         // Emit message event to Socket.IO clients
         this.io.emit('mqtt-message', messageData);
         
         // Log for debugging
         logger.info(`Emitting mqtt-message event for ${data.topic}`);
-        logger.info(`Message payload: ${typeof messageData.payload === 'object' ? JSON.stringify(messageData.payload) : messageData.payload}`);
+        logger.debug(`Message payload type: ${typeof messageData.payload}`);
+        logger.debug(`Message payload: ${typeof messageData.payload === 'object' ? JSON.stringify(messageData.payload) : messageData.payload}`);
         
         // Save message to database for history
         try {
@@ -897,5 +961,30 @@ export class DashboardServer {
   public stop(): void {
     this.server.close();
     logger.info('Dashboard server stopped');
+  }
+
+  // Code Examples page
+  private codeExamples(req: Request, res: Response) {
+    res.render('code-examples', { title: 'Code Examples' });
+  }
+  
+  // Debug page
+  private debug(req: Request, res: Response) {
+    logger.info('Debug page requested');
+    res.render('debug', { title: 'MQTT Dashboard Debug' });
+  }
+  
+  // API: Get system stats
+  private getSystemStats(req: Request, res: Response) {
+    res.json({
+      uptime: Math.floor((Date.now() - this.startTime) / 1000),
+      connectedClients: this.connectedClients.length,
+      messageCount: this.messageCount,
+      activeTopics: Array.from(this.activeTopics.entries()).map(([topic, data]) => ({
+        topic,
+        subscribers: data.count,
+        lastMessage: data.lastMessage
+      }))
+    });
   }
 } 
