@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <!-- Material Design CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#"><i class="fas fa-tachometer-alt me-2"></i>Smart Lily MQTT Dashboard</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/"><i class="fas fa-home me-1"></i>Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/topics"><i class="fas fa-sitemap me-1"></i>Topics Management</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/automation"><i class="fas fa-magic me-1"></i>Automation</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/code-examples"><i class="fas fa-code me-1"></i>Code Examples</a>
+                    </li>
+                </ul>
+            </div>
+            <div class="d-flex">
+                <span class="navbar-text me-3">
+                    <span class="badge bg-success" id="status-badge"><i class="fas fa-plug me-1"></i>Connected</span>
+                </span>
+                <span class="navbar-text">
+                    <i class="fas fa-server me-1"></i>MQTT: <%= port %> | <i class="fas fa-globe me-1"></i>WS: <%= wsPort %>
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <!-- Sidebar with stats -->
+            <div class="col-md-3">
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <i class="fas fa-chart-line me-2"></i>Server Stats
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span><i class="fas fa-clock me-2"></i>Uptime</span>
+                                <span class="badge bg-primary rounded-pill" id="uptime">0s</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span><i class="fas fa-users me-2"></i>Connected Clients</span>
+                                <span class="badge bg-primary rounded-pill" id="client-count">0</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span><i class="fas fa-envelope me-2"></i>Messages</span>
+                                <span class="badge bg-primary rounded-pill" id="message-count">0</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span><i class="fas fa-sitemap me-2"></i>Active Topics</span>
+                                <span class="badge bg-primary rounded-pill" id="topic-count">0</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Quick Access Card for Automation -->
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header bg-warning text-white">
+                        <i class="fas fa-magic me-2"></i>Quick Automation
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text">Create or manage automation rules to control your MQTT devices.</p>
+                        <div class="d-grid gap-2">
+                            <a href="/automation" class="btn btn-warning"><i class="fas fa-magic me-1"></i>Go to Automation</a>
+                            <a href="/automation?create=true" class="btn btn-outline-warning"><i class="fas fa-plus-circle me-1"></i>Create New Rule</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header bg-success text-white">
+                        <i class="fas fa-desktop me-2"></i>Client List
+                    </div>
+                    <div class="card-body p-0">
+                        <ul class="list-group list-group-flush" id="client-list">
+                            <li class="list-group-item text-center text-muted">No clients connected</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header bg-info text-white">
+                        <i class="fas fa-paper-plane me-2"></i>Publish Message
+                    </div>
+                    <div class="card-body">
+                        <form id="publish-form">
+                            <div class="mb-3">
+                                <label for="pub-topic" class="form-label"><i class="fas fa-tag me-1"></i>Topic</label>
+                                <input type="text" class="form-control" id="pub-topic" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="pub-message" class="form-label"><i class="fas fa-file-alt me-1"></i>Message (JSON or text)</label>
+                                <textarea class="form-control" id="pub-message" rows="3" required></textarea>
+                            </div>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="retain-flag">
+                                <label class="form-check-label" for="retain-flag">
+                                    <i class="fas fa-thumbtack me-1"></i>Retain Message
+                                </label>
+                            </div>
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-play me-1"></i>Publish</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main content area -->
+            <div class="col-md-9">
+                <!-- System Topic Cards -->
+                <div class="row mb-4" id="system-topic-cards">
+                    <!-- Time & Date Card -->
+                    <div class="col-md-4 mb-3">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header bg-primary text-white">
+                                <i class="fas fa-clock me-2"></i>Time & Date
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>ISO Time</span>
+                                        <span id="system-time-iso" class="text-end text-truncate">--</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>Time</span>
+                                        <span id="system-time-readable" class="text-end">--</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>Date</span>
+                                        <span id="system-date" class="text-end">--</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>Unix Time</span>
+                                        <span id="system-time-unix" class="text-end">--</span>
+                                    </li>
+                                </ul>
+                                <div class="mt-3">
+                                    <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#timeHistoryCollapse" aria-expanded="false">
+                                        <i class="fas fa-history me-1"></i>History
+                                    </button>
+                                    <div class="collapse mt-2" id="timeHistoryCollapse">
+                                        <div class="card card-body p-2">
+                                            <small class="text-muted">History Log</small>
+                                            <div class="history-log" id="time-history-log">
+                                                <div class="text-center text-muted small">No history data</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer text-muted small">
+                                <i class="fas fa-tag me-1"></i>system/time/*, system/date
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- System Info Card -->
+                    <div class="col-md-4 mb-3">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header bg-success text-white">
+                                <i class="fas fa-server me-2"></i>System Info
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>Uptime</span>
+                                        <span id="system-uptime" class="text-end">--</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>Memory</span>
+                                        <div id="system-memory" class="text-end">--</div>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>CPU Load</span>
+                                        <div id="system-cpu-load" class="text-end">--</div>
+                                    </li>
+                                </ul>
+                                <div class="mt-3">
+                                    <button class="btn btn-sm btn-outline-success" type="button" data-bs-toggle="collapse" data-bs-target="#systemHistoryCollapse" aria-expanded="false">
+                                        <i class="fas fa-history me-1"></i>History
+                                    </button>
+                                    <div class="collapse mt-2" id="systemHistoryCollapse">
+                                        <div class="card card-body p-2">
+                                            <small class="text-muted">History Log</small>
+                                            <div class="history-log" id="system-history-log">
+                                                <div class="text-center text-muted small">No history data</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer text-muted small">
+                                <i class="fas fa-tag me-1"></i>system/uptime, system/memory, system/cpu/load
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Network Info Card -->
+                    <div class="col-md-4 mb-3">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header bg-info text-white">
+                                <i class="fas fa-network-wired me-2"></i>Network
+                            </div>
+                            <div class="card-body">
+                                <div id="system-network">
+                                    <div class="text-center text-muted">
+                                        <i class="fas fa-spinner fa-spin me-2"></i>Loading network data...
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <button class="btn btn-sm btn-outline-info" type="button" data-bs-toggle="collapse" data-bs-target="#networkHistoryCollapse" aria-expanded="false">
+                                        <i class="fas fa-history me-1"></i>History
+                                    </button>
+                                    <div class="collapse mt-2" id="networkHistoryCollapse">
+                                        <div class="card card-body p-2">
+                                            <small class="text-muted">History Log</small>
+                                            <div class="history-log" id="network-history-log">
+                                                <div class="text-center text-muted small">No history data</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer text-muted small">
+                                <i class="fas fa-tag me-1"></i>system/network
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Dynamic Topic Cards -->
+                <div class="row mb-4" id="dynamic-topic-cards">
+                    <!-- Dynamic cards will be added here by JavaScript -->
+                </div>
+
+                <!-- Message Monitor -->
+                <div class="card shadow-sm">
+                    <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-eye me-2"></i>Message Monitor</span>
+                        <div class="input-group" style="width: 300px;">
+                            <span class="input-group-text"><i class="fas fa-filter"></i></span>
+                            <input type="text" class="form-control" id="topic-filter" placeholder="Filter topic...">
+                            <button class="btn btn-outline-light" type="button" id="clear-messages">
+                                <i class="fas fa-broom me-1"></i>Clear
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body message-container">
+                        <div id="message-list" class="message-list"></div>
+                    </div>
+                </div>
+
+                <div class="row mt-4">
+                    <!-- Subscribe to Topic -->
+                    <div class="col-md-6">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-warning text-dark">
+                                <i class="fas fa-rss me-2"></i>Subscribe to Topic
+                            </div>
+                            <div class="card-body">
+                                <form id="subscribe-form">
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-tag"></i></span>
+                                        <input type="text" class="form-control" id="sub-topic" placeholder="Topic (e.g., sensor/+/temperature)" required>
+                                        <button class="btn btn-warning" type="submit">
+                                            <i class="fas fa-plus-circle me-1"></i>Subscribe
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Active Topics -->
+                    <div class="col-md-6">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-success text-white">
+                                <i class="fas fa-sitemap me-2"></i>Active Topics
+                            </div>
+                            <div class="card-body p-0">
+                                <ul class="list-group list-group-flush" id="topic-list">
+                                    <li class="list-group-item text-center text-muted">No active topics</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card Template for Dynamic Topics -->
+    <template id="topic-card-template">
+        <div class="col-md-4 mb-3 dynamic-topic-card">
+            <div class="card shadow-sm h-100">
+                <div class="card-header text-white">
+                    <i class="fas fa-cube me-2"></i><span class="topic-title">Topic</span>
+                </div>
+                <div class="card-body">
+                    <div class="topic-content"></div>
+                    <div class="mt-3">
+                        <button class="btn btn-sm btn-outline-secondary history-button" type="button" data-bs-toggle="collapse">
+                            <i class="fas fa-history me-1"></i>History
+                        </button>
+                        <div class="collapse mt-2 history-collapse">
+                            <div class="card card-body p-2">
+                                <small class="text-muted">History Log</small>
+                                <div class="history-log topic-history-log">
+                                    <div class="text-center text-muted small">No history data</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer text-muted small">
+                    <i class="fas fa-tag me-1"></i><span class="topic-path">topic/path</span>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <div class="toast-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/dashboard.js"></script>
+</body>
+</html> 

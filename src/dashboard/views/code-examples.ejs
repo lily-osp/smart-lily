@@ -1,0 +1,2098 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <!-- Material Design CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Code highlighting -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        pre {
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .code-section {
+            margin-bottom: 40px;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            color: white;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .copy-btn:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+        .code-container {
+            position: relative;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#"><i class="fas fa-tachometer-alt me-2"></i>Smart Lily MQTT Dashboard</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/"><i class="fas fa-home me-1"></i>Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/topics"><i class="fas fa-sitemap me-1"></i>Topics Management</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/automation"><i class="fas fa-magic me-1"></i>Automation</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/code-examples"><i class="fas fa-code me-1"></i>Code Examples</a>
+                    </li>
+                </ul>
+            </div>
+            <div class="d-flex">
+                <span class="navbar-text me-3">
+                    <span class="badge bg-success" id="status-badge"><i class="fas fa-plug me-1"></i>Connected</span>
+                </span>
+                <span class="navbar-text">
+                    <i class="fas fa-server me-1"></i>MQTT: <%= port %> | <i class="fas fa-globe me-1"></i>WS: <%= wsPort %>
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <!-- Main content -->
+            <div class="col-md-12">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-code me-2"></i>Code Examples for Smart Lily MQTT Server</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>
+                            This page provides code examples to help you connect your devices to the Smart Lily MQTT Server.
+                            Use these examples as starting points for your projects.
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Table of Contents -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="fas fa-list me-2"></i>Contents</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group">
+                            <a href="#esp8266" class="list-group-item list-group-item-action d-flex align-items-center">
+                                <i class="fas fa-microchip me-3 text-info"></i>
+                                <div>
+                                    <strong>ESP8266/ESP32 with Arduino</strong>
+                                    <div class="small text-muted">Connect your ESP8266 or ESP32 microcontroller using Arduino framework</div>
+                                </div>
+                            </a>
+                            <a href="#micropython" class="list-group-item list-group-item-action d-flex align-items-center">
+                                <i class="fab fa-python me-3 text-primary"></i>
+                                <div>
+                                    <strong>MicroPython (ESP8266/ESP32)</strong>
+                                    <div class="small text-muted">Use MicroPython on ESP8266 or ESP32 to connect to MQTT</div>
+                                </div>
+                            </a>
+                            <a href="#python" class="list-group-item list-group-item-action d-flex align-items-center">
+                                <i class="fab fa-python me-3 text-success"></i>
+                                <div>
+                                    <strong>Python (paho-mqtt)</strong>
+                                    <div class="small text-muted">Connect with Python using the paho-mqtt library</div>
+                                </div>
+                            </a>
+                            <a href="#nodejs" class="list-group-item list-group-item-action d-flex align-items-center">
+                                <i class="fab fa-node-js me-3 text-success"></i>
+                                <div>
+                                    <strong>Node.js</strong>
+                                    <div class="small text-muted">Connect with Node.js using the MQTT library</div>
+                                </div>
+                            </a>
+                            <a href="#javascript" class="list-group-item list-group-item-action d-flex align-items-center">
+                                <i class="fab fa-js me-3 text-warning"></i>
+                                <div>
+                                    <strong>Web Browser (JavaScript)</strong>
+                                    <div class="small text-muted">Connect directly from a web browser using MQTT over WebSockets</div>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ESP8266/ESP32 with Arduino -->
+                <div id="esp8266" class="card shadow-sm mb-4 code-section">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="fas fa-microchip me-2"></i>ESP8266/ESP32 with Arduino</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>This example demonstrates how to connect an ESP8266 or ESP32 to the Smart Lily MQTT server using the PubSubClient library in the Arduino framework.</p>
+                        
+                        <h6 class="mt-4 mb-2"><i class="fas fa-puzzle-piece me-2"></i>Dependencies</h6>
+                        <p>You need to install the following libraries from the Arduino Library Manager:</p>
+                        <ul>
+                            <li><strong>PubSubClient</strong> by Nick O'Leary</li>
+                            <li><strong>WiFiManager</strong> (optional, for easy WiFi setup)</li>
+                            <li><strong>ArduinoJson</strong> (for parsing JSON messages)</li>
+                        </ul>
+
+                        <h6 class="mt-4 mb-2"><i class="fas fa-code me-2"></i>Basic Connection Example</h6>
+                        <div class="code-container">
+                            <button class="copy-btn" data-clipboard-target="#arduino-basic">Copy</button>
+                            <pre><code class="language-cpp" id="arduino-basic">#include &lt;ESP8266WiFi.h&gt;  // Use &lt;WiFi.h&gt; for ESP32
+#include &lt;PubSubClient.h&gt;
+
+// WiFi credentials
+const char* ssid = "YOUR_WIFI_SSID";
+const char* password = "YOUR_WIFI_PASSWORD";
+
+// MQTT Server details
+const char* mqtt_server = "<%= process.env.MQTT_HOST || 'your-mqtt-server.local' %>";
+const int mqtt_port = <%= port %>;
+const char* mqtt_user = ""; // If authentication is enabled
+const char* mqtt_password = ""; // If authentication is enabled
+const char* client_id = "ESP8266_Client"; // Change this to a unique name
+
+// Topics
+const char* status_topic = "sensors/esp8266/status";
+const char* temperature_topic = "sensors/esp8266/temperature";
+const char* humidity_topic = "sensors/esp8266/humidity";
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+unsigned long lastMsg = 0;
+
+void setup_wifi() {
+  delay(10);
+  Serial.println();
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("");
+  Serial.println("WiFi connected");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+}
+
+void callback(char* topic, byte* payload, unsigned int length) {
+  Serial.print("Message arrived [");
+  Serial.print(topic);
+  Serial.print("] ");
+  
+  // Convert payload to string
+  String message;
+  for (unsigned int i = 0; i < length; i++) {
+    message += (char)payload[i];
+  }
+  Serial.println(message);
+  
+  // Handle incoming messages
+  if (String(topic) == "commands/esp8266/led") {
+    if (message == "ON") {
+      digitalWrite(LED_BUILTIN, LOW); // LED on (active low)
+      Serial.println("LED ON");
+    } else if (message == "OFF") {
+      digitalWrite(LED_BUILTIN, HIGH); // LED off
+      Serial.println("LED OFF");
+    }
+  }
+}
+
+void reconnect() {
+  // Loop until we're reconnected
+  while (!client.connected()) {
+    Serial.print("Attempting MQTT connection...");
+    // Attempt to connect
+    if (client.connect(client_id, mqtt_user, mqtt_password, status_topic, 1, true, "offline")) {
+      Serial.println("connected");
+      
+      // Publish online status with retain flag
+      client.publish(status_topic, "online", true);
+      
+      // Subscribe to commands
+      client.subscribe("commands/esp8266/#");
+    } else {
+      Serial.print("failed, rc=");
+      Serial.print(client.state());
+      Serial.println(" try again in 5 seconds");
+      delay(5000);
+    }
+  }
+}
+
+void setup() {
+  pinMode(LED_BUILTIN, OUTPUT);
+  Serial.begin(115200);
+  setup_wifi();
+  
+  client.setServer(mqtt_server, mqtt_port);
+  client.setCallback(callback);
+}
+
+void loop() {
+  if (!client.connected()) {
+    reconnect();
+  }
+  client.loop();
+
+  unsigned long now = millis();
+  if (now - lastMsg > 30000) {
+    lastMsg = now;
+    
+    // Simulate sensor readings
+    float temperature = 22.5 + (random(0, 100) / 100.0);
+    float humidity = 55.0 + (random(0, 100) / 100.0);
+    
+    // Convert to string and publish
+    char tempString[8];
+    dtostrf(temperature, 1, 2, tempString);
+    client.publish(temperature_topic, tempString);
+    
+    char humString[8];
+    dtostrf(humidity, 1, 2, humString);
+    client.publish(humidity_topic, humString);
+    
+    Serial.print("Published: Temperature = ");
+    Serial.print(temperature);
+    Serial.print("°C, Humidity = ");
+    Serial.print(humidity);
+    Serial.println("%");
+  }
+}</code></pre>
+                        </div>
+
+                        <h6 class="mt-4 mb-2"><i class="fas fa-project-diagram me-2"></i>Advanced Example with JSON and Multiple Sensors</h6>
+                        <div class="code-container">
+                            <button class="copy-btn" data-clipboard-target="#arduino-advanced">Copy</button>
+                            <pre><code class="language-cpp" id="arduino-advanced">#include &lt;ESP8266WiFi.h&gt;  // Use &lt;WiFi.h&gt; for ESP32
+#include &lt;PubSubClient.h&gt;
+#include &lt;ArduinoJson.h&gt;
+#include &lt;DHT.h&gt;
+
+// WiFi credentials
+const char* ssid = "YOUR_WIFI_SSID";
+const char* password = "YOUR_WIFI_PASSWORD";
+
+// MQTT Server details
+const char* mqtt_server = "<%= process.env.MQTT_HOST || 'your-mqtt-server.local' %>";
+const int mqtt_port = <%= port %>;
+const char* mqtt_user = ""; // If authentication is enabled
+const char* mqtt_password = ""; // If authentication is enabled
+const char* client_id = "ESP8266_SensorHub";
+
+// DHT Sensor
+#define DHTPIN 2
+#define DHTTYPE DHT22
+DHT dht(DHTPIN, DHTTYPE);
+
+// Topics
+const char* status_topic = "devices/sensorhub/status";
+const char* sensors_topic = "devices/sensorhub/sensors";
+const char* commands_topic = "devices/sensorhub/commands";
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+unsigned long lastMsg = 0;
+int ledPin = LED_BUILTIN;
+int relayPin = 5; // GPIO5 (D1 on NodeMCU)
+
+// Device configuration
+bool sensorEnabled = true;
+int publishInterval = 30000; // 30 seconds
+
+void setup_wifi() {
+  delay(10);
+  Serial.println();
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("");
+  Serial.println("WiFi connected");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+}
+
+void callback(char* topic, byte* payload, unsigned int length) {
+  Serial.print("Message arrived [");
+  Serial.print(topic);
+  Serial.print("] ");
+  
+  // Create a buffer for the payload
+  char message[length + 1];
+  for (unsigned int i = 0; i < length; i++) {
+    message[i] = (char)payload[i];
+  }
+  message[length] = '\0';
+  Serial.println(message);
+  
+  // Process the JSON command
+  if (String(topic) == commands_topic) {
+    DynamicJsonDocument doc(256);
+    DeserializationError error = deserializeJson(doc, message);
+    
+    if (!error) {
+      // Process commands based on the command type
+      const char* command = doc["command"];
+      
+      if (strcmp(command, "set_relay") == 0) {
+        bool state = doc["state"];
+        digitalWrite(relayPin, state ? HIGH : LOW);
+        
+        // Publish an acknowledgment
+        DynamicJsonDocument response(128);
+        response["type"] = "response";
+        response["command"] = "set_relay";
+        response["success"] = true;
+        response["relay_state"] = state;
+        
+        char responseBuffer[128];
+        size_t n = serializeJson(response, responseBuffer);
+        client.publish("devices/sensorhub/response", responseBuffer, n);
+      }
+      else if (strcmp(command, "set_interval") == 0) {
+        publishInterval = doc["interval"];
+        
+        // Publish an acknowledgment
+        DynamicJsonDocument response(128);
+        response["type"] = "response";
+        response["command"] = "set_interval";
+        response["success"] = true;
+        response["interval"] = publishInterval;
+        
+        char responseBuffer[128];
+        size_t n = serializeJson(response, responseBuffer);
+        client.publish("devices/sensorhub/response", responseBuffer, n);
+      }
+      else if (strcmp(command, "enable_sensor") == 0) {
+        sensorEnabled = doc["enabled"];
+        
+        // Publish an acknowledgment
+        DynamicJsonDocument response(128);
+        response["type"] = "response";
+        response["command"] = "enable_sensor";
+        response["success"] = true;
+        response["sensor_enabled"] = sensorEnabled;
+        
+        char responseBuffer[128];
+        size_t n = serializeJson(response, responseBuffer);
+        client.publish("devices/sensorhub/response", responseBuffer, n);
+      }
+    }
+  }
+}
+
+void reconnect() {
+  // Loop until we're reconnected
+  while (!client.connected()) {
+    Serial.print("Attempting MQTT connection...");
+    // Attempt to connect with LWT (Last Will and Testament)
+    if (client.connect(client_id, mqtt_user, mqtt_password, status_topic, 1, true, "offline")) {
+      Serial.println("connected");
+      
+      // Publish online status with retain flag
+      client.publish(status_topic, "online", true);
+      
+      // Subscribe to commands
+      client.subscribe(commands_topic);
+      
+      // Publish initial device info
+      publishDeviceInfo();
+    } else {
+      Serial.print("failed, rc=");
+      Serial.print(client.state());
+      Serial.println(" try again in 5 seconds");
+      delay(5000);
+    }
+  }
+}
+
+void publishDeviceInfo() {
+  DynamicJsonDocument doc(256);
+  doc["device_id"] = client_id;
+  doc["type"] = "sensor_hub";
+  doc["ip"] = WiFi.localIP().toString();
+  doc["uptime_seconds"] = millis() / 1000;
+  doc["firmware_version"] = "1.0.0";
+  doc["capabilities"] = "temperature,humidity,relay";
+  
+  char buffer[256];
+  size_t n = serializeJson(doc, buffer);
+  client.publish("devices/sensorhub/info", buffer, n, true);
+}
+
+void publishSensorData() {
+  if (!sensorEnabled) return;
+  
+  // Read sensor data
+  float temperature = dht.readTemperature();
+  float humidity = dht.readHumidity();
+  
+  // Check if any reads failed
+  if (isnan(humidity) || isnan(temperature)) {
+    Serial.println("Failed to read from DHT sensor!");
+    return;
+  }
+  
+  // Create JSON document
+  DynamicJsonDocument doc(256);
+  doc["timestamp"] = millis();
+  
+  JsonObject data = doc.createNestedObject("data");
+  data["temperature"] = temperature;
+  data["humidity"] = humidity;
+  data["heat_index"] = dht.computeHeatIndex(temperature, humidity, false);
+  data["relay_state"] = digitalRead(relayPin);
+  
+  // Serialize JSON to a buffer and publish
+  char buffer[256];
+  size_t n = serializeJson(doc, buffer);
+  client.publish(sensors_topic, buffer, n);
+  
+  Serial.println("Sensor data published");
+}
+
+void setup() {
+  pinMode(ledPin, OUTPUT);
+  pinMode(relayPin, OUTPUT);
+  digitalWrite(relayPin, LOW);  // Initialize relay to OFF
+  
+  Serial.begin(115200);
+  dht.begin();
+  setup_wifi();
+  
+  client.setServer(mqtt_server, mqtt_port);
+  client.setCallback(callback);
+}
+
+void loop() {
+  if (!client.connected()) {
+    reconnect();
+  }
+  client.loop();
+
+  unsigned long now = millis();
+  if (now - lastMsg > publishInterval) {
+    lastMsg = now;
+    publishSensorData();
+    
+    // Toggle LED to indicate activity
+    digitalWrite(ledPin, !digitalRead(ledPin));
+  }
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MicroPython -->
+                <div id="micropython" class="card shadow-sm mb-4 code-section">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fab fa-python me-2"></i>MicroPython (ESP8266/ESP32)</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>This example shows how to connect an ESP8266 or ESP32 running MicroPython to the Smart Lily MQTT server using the umqtt.simple library.</p>
+                        
+                        <h6 class="mt-4 mb-2"><i class="fas fa-download me-2"></i>Prerequisites</h6>
+                        <p>Make sure you have MicroPython installed on your ESP8266/ESP32 and the umqtt.simple library installed:</p>
+                        <pre><code class="language-python">import upip
+upip.install('micropython-umqtt.simple')</code></pre>
+                        
+                        <h6 class="mt-4 mb-2"><i class="fas fa-code me-2"></i>Basic Example</h6>
+                        <div class="code-container">
+                            <button class="copy-btn" data-clipboard-target="#micropython-basic">Copy</button>
+                            <pre><code class="language-python" id="micropython-basic">import time
+import network
+import machine
+import ubinascii
+from umqtt.simple import MQTTClient
+
+# Configuration
+WIFI_SSID = 'YOUR_WIFI_SSID'
+WIFI_PASSWORD = 'YOUR_WIFI_PASSWORD'
+
+# MQTT Server Configuration
+MQTT_SERVER = '<%= process.env.MQTT_HOST || 'your-mqtt-server.local' %>'
+MQTT_PORT = <%= port %>
+MQTT_USER = ''  # If authentication is enabled
+MQTT_PASSWORD = ''  # If authentication is enabled
+
+# Generate a unique client ID
+CLIENT_ID = ubinascii.hexlify(machine.unique_id()).decode('utf-8')
+
+# Topics
+STATUS_TOPIC = b'devices/micropython/status'
+SENSOR_TOPIC = b'devices/micropython/sensor'
+LED_COMMAND_TOPIC = b'devices/micropython/led/command'
+
+# Initialize LED
+led = machine.Pin(2, machine.Pin.OUT)  # GPIO2 (D4 on most ESP8266 boards)
+
+def connect_wifi():
+    """Connect to WiFi network"""
+    wlan = network.WLAN(network.STA_IF)
+    wlan.active(True)
+    
+    if not wlan.isconnected():
+        print('Connecting to WiFi...')
+        wlan.connect(WIFI_SSID, WIFI_PASSWORD)
+        
+        # Wait for connection
+        while not wlan.isconnected():
+            time.sleep(0.5)
+            
+    print('WiFi connected!')
+    print('Network config:', wlan.ifconfig())
+    return wlan
+
+def mqtt_callback(topic, msg):
+    """Callback for when MQTT messages are received"""
+    print('Message received on {}: {}'.format(topic, msg))
+    
+    if topic == LED_COMMAND_TOPIC:
+        if msg == b'ON':
+            led.value(0)  # Turn on (active low)
+            print('LED ON')
+        elif msg == b'OFF':
+            led.value(1)  # Turn off
+            print('LED OFF')
+
+def connect_mqtt():
+    """Connect to MQTT broker"""
+    client = MQTTClient(CLIENT_ID, MQTT_SERVER, MQTT_PORT, MQTT_USER, MQTT_PASSWORD, keepalive=60)
+    
+    # Set callback and configure Last Will and Testament
+    client.set_callback(mqtt_callback)
+    client.set_last_will(STATUS_TOPIC, b'offline', retain=True, qos=1)
+    
+    try:
+        client.connect()
+        print('Connected to MQTT broker')
+        
+        # Publish online status
+        client.publish(STATUS_TOPIC, b'online', retain=True, qos=1)
+        
+        # Subscribe to command topics
+        client.subscribe(LED_COMMAND_TOPIC)
+        
+        return client
+    except Exception as e:
+        print('Failed to connect to MQTT broker:', e)
+        return None
+
+def main():
+    """Main function"""
+    try:
+        # Connect to WiFi
+        wlan = connect_wifi()
+        
+        # Connect to MQTT broker
+        client = connect_mqtt()
+        if not client:
+            return
+        
+        # Main loop
+        last_publish = 0
+        while True:
+            # Check for incoming messages
+            client.check_msg()
+            
+            # Publish sensor data every 30 seconds
+            current_time = time.time()
+            if current_time - last_publish >= 30:
+                # Read temperature from internal sensor (if available)
+                # For demonstration, we'll just use a random value
+                temp = 25 + (machine.random() % 10)
+                
+                # Publish sensor data
+                client.publish(SENSOR_TOPIC, 'temperature={}'.format(temp).encode())
+                print('Published: temperature={}'.format(temp))
+                
+                last_publish = current_time
+                
+            # Small sleep to prevent CPU hogging
+            time.sleep(0.1)
+    
+    except Exception as e:
+        print('Error:', e)
+    finally:
+        # If an exception occurs, try to disconnect cleanly
+        if 'client' in locals() and client:
+            try:
+                client.disconnect()
+                print('Disconnected from MQTT broker')
+            except:
+                pass
+
+if __name__ == '__main__':
+    main()</code></pre>
+                        </div>
+
+                        <h6 class="mt-4 mb-2"><i class="fas fa-file-alt me-2"></i>Running on Boot</h6>
+                        <p>To run this script on boot, create a file named <code>boot.py</code> with the following code:</p>
+                        <div class="code-container">
+                            <button class="copy-btn" data-clipboard-target="#micropython-boot">Copy</button>
+                            <pre><code class="language-python" id="micropython-boot"># boot.py - runs on boot-up
+import gc
+import webrepl
+import time
+
+# Wait a bit on boot
+time.sleep(1)
+
+# Enable garbage collection
+gc.collect()
+
+# Start WebREPL (optional)
+webrepl.start()
+print('WebREPL started')
+
+# Import and run your main script
+try:
+    import mqtt_client
+    print('Starting MQTT client...')
+except Exception as e:
+    print('Error importing mqtt_client:', e)</code></pre>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Python with paho-mqtt -->
+                <div id="python" class="card shadow-sm mb-4 code-section">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="fab fa-python me-2"></i>Python (paho-mqtt)</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>This example shows how to connect to the Smart Lily MQTT server using Python with the paho-mqtt library.</p>
+                        
+                        <h6 class="mt-4 mb-2"><i class="fas fa-download me-2"></i>Installation</h6>
+                        <p>Install the paho-mqtt library using pip:</p>
+                        <pre><code class="language-bash">pip install paho-mqtt</code></pre>
+                        
+                        <h6 class="mt-4 mb-2"><i class="fas fa-code me-2"></i>Basic Example</h6>
+                        <div class="code-container">
+                            <button class="copy-btn" data-clipboard-target="#python-basic">Copy</button>
+                            <pre><code class="language-python" id="python-basic">import paho.mqtt.client as mqtt
+import time
+import json
+import random
+import socket
+
+# MQTT Server Configuration
+MQTT_SERVER = "<%= process.env.MQTT_HOST || 'your-mqtt-server.local' %>"
+MQTT_PORT = <%= port %>
+MQTT_USER = ""  # If authentication is enabled
+MQTT_PASSWORD = ""  # If authentication is enabled
+CLIENT_ID = f"python-client-{socket.gethostname()}"
+
+# Topics
+STATUS_TOPIC = "devices/python/status"
+DATA_TOPIC = "devices/python/data"
+COMMAND_TOPIC = "devices/python/commands"
+
+# Callback for when the client receives a CONNACK response from the server
+def on_connect(client, userdata, flags, rc):
+    if rc == 0:
+        print("Connected to MQTT broker")
+        
+        # Publish online status with retain flag
+        client.publish(STATUS_TOPIC, "online", qos=1, retain=True)
+        
+        # Subscribe to command topic
+        client.subscribe(COMMAND_TOPIC)
+        print(f"Subscribed to {COMMAND_TOPIC}")
+    else:
+        print(f"Failed to connect, return code: {rc}")
+
+# Callback for when a message is received from the server
+def on_message(client, userdata, msg):
+    print(f"Message received on topic {msg.topic}: {msg.payload.decode()}")
+    
+    # Process commands
+    if msg.topic == COMMAND_TOPIC:
+        try:
+            command = json.loads(msg.payload.decode())
+            if 'action' in command:
+                if command['action'] == 'restart':
+                    print("Restart command received")
+                    # Implement restart logic here
+                elif command['action'] == 'update_config':
+                    if 'config' in command:
+                        print(f"Updating configuration: {command['config']}")
+                        # Implement config update logic here
+        except json.JSONDecodeError:
+            print("Received invalid JSON command")
+
+# Callback for when the client disconnects from the server
+def on_disconnect(client, userdata, rc):
+    if rc != 0:
+        print("Unexpected disconnection. Attempting to reconnect...")
+        while not client.is_connected():
+            try:
+                client.reconnect()
+                break
+            except:
+                print("Reconnect failed. Retrying in 5 seconds...")
+                time.sleep(5)
+
+def main():
+    # Create MQTT client instance
+    client = mqtt.Client(CLIENT_ID, clean_session=True)
+    
+    # Set username and password if needed
+    if MQTT_USER and MQTT_PASSWORD:
+        client.username_pw_set(MQTT_USER, MQTT_PASSWORD)
+    
+    # Set callbacks
+    client.on_connect = on_connect
+    client.on_message = on_message
+    client.on_disconnect = on_disconnect
+    
+    # Set Last Will and Testament (LWT)
+    client.will_set(STATUS_TOPIC, "offline", qos=1, retain=True)
+    
+    try:
+        # Connect to the MQTT broker
+        print(f"Connecting to MQTT broker at {MQTT_SERVER}:{MQTT_PORT}")
+        client.connect(MQTT_SERVER, MQTT_PORT, keepalive=60)
+        
+        # Start the network loop in a background thread
+        client.loop_start()
+        
+        # Main loop - publish data every 10 seconds
+        while True:
+            # Generate sample data
+            data = {
+                "timestamp": time.time(),
+                "temperature": round(20 + random.random() * 10, 2),
+                "humidity": round(50 + random.random() * 20, 2),
+                "cpu_usage": round(random.random() * 100, 2),
+                "hostname": socket.gethostname()
+            }
+            
+            # Convert data to JSON and publish
+            client.publish(DATA_TOPIC, json.dumps(data))
+            print(f"Published data: {json.dumps(data)}")
+            
+            # Wait for 10 seconds
+            time.sleep(10)
+    
+    except KeyboardInterrupt:
+        print("Exiting...")
+    finally:
+        # Clean up
+        if client.is_connected():
+            client.publish(STATUS_TOPIC, "offline", qos=1, retain=True)
+            client.disconnect()
+        client.loop_stop()
+        print("Disconnected from MQTT broker")
+
+if __name__ == "__main__":
+    main()</code></pre>
+                        </div>
+
+                        <h6 class="mt-4 mb-2"><i class="fas fa-project-diagram me-2"></i>Advanced Example with Class Structure</h6>
+                        <div class="code-container">
+                            <button class="copy-btn" data-clipboard-target="#python-advanced">Copy</button>
+                            <pre><code class="language-python" id="python-advanced">import paho.mqtt.client as mqtt
+import time
+import json
+import random
+import socket
+import threading
+import logging
+import os
+from typing import Dict, Any, Optional, List, Callable
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger("MQTTClient")
+
+class SmartLilyClient:
+    """Client for connecting to Smart Lily MQTT server"""
+    
+    def __init__(
+        self,
+        client_id: str = None,
+        mqtt_server: str = "<%= process.env.MQTT_HOST || 'your-mqtt-server.local' %>",
+        mqtt_port: int = <%= port %>,
+        mqtt_user: str = "",
+        mqtt_password: str = "",
+        base_topic: str = "devices/python-client"
+    ):
+        # Generate a unique client ID if not provided
+        if client_id is None:
+            client_id = f"python-client-{socket.gethostname()}-{os.getpid()}"
+        
+        self.client_id = client_id
+        self.mqtt_server = mqtt_server
+        self.mqtt_port = mqtt_port
+        self.mqtt_user = mqtt_user
+        self.mqtt_password = mqtt_password
+        self.base_topic = base_topic
+        
+        # Define topics
+        self.status_topic = f"{base_topic}/status"
+        self.data_topic = f"{base_topic}/data"
+        self.command_topic = f"{base_topic}/commands/#"
+        
+        # Initialize MQTT client
+        self.client = mqtt.Client(client_id, clean_session=True)
+        
+        # Set callbacks
+        self.client.on_connect = self._on_connect
+        self.client.on_message = self._on_message
+        self.client.on_disconnect = self._on_disconnect
+        
+        # Set authentication if provided
+        if mqtt_user and mqtt_password:
+            self.client.username_pw_set(mqtt_user, mqtt_password)
+        
+        # Set Last Will and Testament (LWT)
+        self.client.will_set(self.status_topic, "offline", qos=1, retain=True)
+        
+        # Command handlers
+        self.command_handlers: Dict[str, Callable] = {}
+        
+        # State
+        self.connected = False
+        self.running = False
+        self.publish_interval = 10  # seconds
+        self._publish_thread = None
+    
+    def _on_connect(self, client, userdata, flags, rc):
+        """Callback for when the client connects to the broker"""
+        if rc == 0:
+            self.connected = True
+            logger.info(f"Connected to MQTT broker at {self.mqtt_server}:{self.mqtt_port}")
+            
+            # Publish online status with retain flag
+            self.client.publish(self.status_topic, "online", qos=1, retain=True)
+            
+            # Subscribe to command topics
+            self.client.subscribe(self.command_topic)
+            logger.info(f"Subscribed to {self.command_topic}")
+            
+            # Also publish device info
+            self._publish_device_info()
+        else:
+            self.connected = False
+            logger.error(f"Failed to connect, return code: {rc}")
+    
+    def _on_message(self, client, userdata, msg):
+        """Callback for when a message is received from the broker"""
+        topic = msg.topic
+        try:
+            payload = json.loads(msg.payload.decode())
+            logger.info(f"Message received on {topic}: {payload}")
+            
+            # Extract command from topic
+            # Example: devices/python-client/commands/restart
+            command = topic.split('/')[-1] if '/' in topic else None
+            
+            if command and command in self.command_handlers:
+                self.command_handlers[command](payload)
+            elif 'action' in payload:
+                action = payload['action']
+                if action in self.command_handlers:
+                    self.command_handlers[action](payload)
+                else:
+                    logger.warning(f"No handler for action: {action}")
+        except json.JSONDecodeError:
+            logger.warning(f"Received invalid JSON on {topic}: {msg.payload.decode()}")
+        except Exception as e:
+            logger.error(f"Error handling message: {e}")
+    
+    def _on_disconnect(self, client, userdata, rc):
+        """Callback for when the client disconnects from the broker"""
+        self.connected = False
+        if rc != 0:
+            logger.warning("Unexpected disconnection.")
+            if self.running:
+                logger.info("Attempting to reconnect...")
+                self._reconnect()
+    
+    def _reconnect(self):
+        """Attempt to reconnect to the MQTT broker"""
+        while self.running and not self.connected:
+            try:
+                self.client.reconnect()
+                break
+            except Exception as e:
+                logger.error(f"Reconnect failed: {e}")
+                logger.info("Retrying in 5 seconds...")
+                time.sleep(5)
+    
+    def _publish_device_info(self):
+        """Publish device information"""
+        info = {
+            "client_id": self.client_id,
+            "hostname": socket.gethostname(),
+            "ip_address": socket.gethostbyname(socket.gethostname()),
+            "platform": os.name,
+            "version": "1.0.0",
+            "capabilities": ["temperature", "humidity", "cpu_usage"]
+        }
+        self.client.publish(f"{self.base_topic}/info", json.dumps(info), qos=1, retain=True)
+        logger.info("Published device info")
+    
+    def _publish_loop(self):
+        """Background thread that periodically publishes data"""
+        while self.running:
+            if self.connected:
+                try:
+                    data = self.get_data()
+                    if data:
+                        self.client.publish(self.data_topic, json.dumps(data))
+                        logger.debug(f"Published data: {data}")
+                except Exception as e:
+                    logger.error(f"Error publishing data: {e}")
+            time.sleep(self.publish_interval)
+    
+    def get_data(self) -> Dict[str, Any]:
+        """Override this method to provide actual sensor data"""
+        return {
+            "timestamp": time.time(),
+            "temperature": round(20 + random.random() * 10, 2),
+            "humidity": round(50 + random.random() * 20, 2),
+            "cpu_usage": round(random.random() * 100, 2)
+        }
+    
+    def register_command_handler(self, command: str, handler: Callable):
+        """Register a handler for a specific command"""
+        self.command_handlers[command] = handler
+        logger.info(f"Registered handler for command: {command}")
+    
+    def connect(self):
+        """Connect to the MQTT broker"""
+        try:
+            logger.info(f"Connecting to MQTT broker at {self.mqtt_server}:{self.mqtt_port}")
+            self.client.connect(self.mqtt_server, self.mqtt_port, keepalive=60)
+            self.client.loop_start()
+            return True
+        except Exception as e:
+            logger.error(f"Failed to connect: {e}")
+            return False
+    
+    def disconnect(self):
+        """Disconnect from the MQTT broker"""
+        try:
+            if self.connected:
+                self.client.publish(self.status_topic, "offline", qos=1, retain=True)
+                self.client.disconnect()
+            self.client.loop_stop()
+            self.connected = False
+            logger.info("Disconnected from MQTT broker")
+            return True
+        except Exception as e:
+            logger.error(f"Error disconnecting: {e}")
+            return False
+    
+    def start(self):
+        """Start the client and begin publishing data"""
+        if self.running:
+            return False
+        
+        self.running = True
+        if not self.connected:
+            self.connect()
+        
+        # Start the publish loop in a separate thread
+        self._publish_thread = threading.Thread(target=self._publish_loop)
+        self._publish_thread.daemon = True
+        self._publish_thread.start()
+        
+        logger.info("Client started")
+        return True
+    
+    def stop(self):
+        """Stop the client"""
+        self.running = False
+        if self._publish_thread:
+            self._publish_thread.join(timeout=2.0)
+        self.disconnect()
+        logger.info("Client stopped")
+        return True
+    
+    def publish(self, topic: str, message: Any, retain: bool = False):
+        """Publish a message to a topic"""
+        if isinstance(message, dict) or isinstance(message, list):
+            message = json.dumps(message)
+        elif not isinstance(message, str):
+            message = str(message)
+        
+        full_topic = f"{self.base_topic}/{topic}" if not topic.startswith(self.base_topic) else topic
+        self.client.publish(full_topic, message, retain=retain)
+        logger.debug(f"Published to {full_topic}: {message}")
+
+
+# Example usage
+def restart_handler(data):
+    logger.info("Restart command received")
+    # Implement restart logic here
+
+def update_config_handler(data):
+    if 'config' in data:
+        logger.info(f"Updating configuration: {data['config']}")
+        # Implement config update logic here
+
+def main():
+    # Create client instance
+    client = SmartLilyClient(base_topic="devices/python-example")
+    
+    # Register command handlers
+    client.register_command_handler("restart", restart_handler)
+    client.register_command_handler("update_config", update_config_handler)
+    
+    try:
+        # Start the client
+        client.start()
+        
+        # Keep the main thread alive
+        while True:
+            time.sleep(1)
+    
+    except KeyboardInterrupt:
+        logger.info("Exiting...")
+    finally:
+        client.stop()
+
+if __name__ == "__main__":
+    main()</code></pre>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Node.js -->
+                <div id="nodejs" class="card shadow-sm mb-4 code-section">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="fab fa-node-js me-2"></i>Node.js</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>This example shows how to connect to the Smart Lily MQTT server using Node.js with the MQTT library.</p>
+                        
+                        <h6 class="mt-4 mb-2"><i class="fas fa-download me-2"></i>Installation</h6>
+                        <p>Install the mqtt library using npm:</p>
+                        <pre><code class="language-bash">npm install mqtt</code></pre>
+                        
+                        <h6 class="mt-4 mb-2"><i class="fas fa-code me-2"></i>Basic Example</h6>
+                        <div class="code-container">
+                            <button class="copy-btn" data-clipboard-target="#nodejs-basic">Copy</button>
+                            <pre><code class="language-javascript" id="nodejs-basic">const mqtt = require('mqtt');
+const os = require('os');
+
+// MQTT Server Configuration
+const MQTT_SERVER = '<%= process.env.MQTT_HOST || 'your-mqtt-server.local' %>';
+const MQTT_PORT = <%= port %>;
+const MQTT_URL = `mqtt://${MQTT_SERVER}:${MQTT_PORT}`;
+const CLIENT_ID = `nodejs-client-${os.hostname()}-${Math.floor(Math.random() * 10000)}`;
+
+// Topics
+const STATUS_TOPIC = 'devices/nodejs/status';
+const DATA_TOPIC = 'devices/nodejs/data';
+const COMMAND_TOPIC = 'devices/nodejs/commands';
+
+// Connect to MQTT broker
+const client = mqtt.connect(MQTT_URL, {
+  clientId: CLIENT_ID,
+  clean: true,
+  connectTimeout: 4000,
+  reconnectPeriod: 1000,
+  // If authentication is enabled:
+  // username: 'user',
+  // password: 'password',
+  will: {
+    topic: STATUS_TOPIC,
+    payload: 'offline',
+    qos: 1,
+    retain: true
+  }
+});
+
+// Handle connection events
+client.on('connect', () => {
+  console.log('Connected to MQTT broker');
+  
+  // Publish online status with retain flag
+  client.publish(STATUS_TOPIC, 'online', { qos: 1, retain: true });
+  
+  // Subscribe to command topic
+  client.subscribe(COMMAND_TOPIC, { qos: 1 }, (err) => {
+    if (!err) {
+      console.log(`Subscribed to ${COMMAND_TOPIC}`);
+    } else {
+      console.error(`Error subscribing to ${COMMAND_TOPIC}:`, err);
+    }
+  });
+  
+  // Start publishing data periodically
+  startPublishing();
+});
+
+client.on('reconnect', () => {
+  console.log('Reconnecting to MQTT broker...');
+});
+
+client.on('error', (error) => {
+  console.error('MQTT connection error:', error);
+});
+
+client.on('offline', () => {
+  console.log('MQTT client is offline');
+});
+
+client.on('message', (topic, message) => {
+  console.log(`Message received on ${topic}: ${message.toString()}`);
+  
+  if (topic === COMMAND_TOPIC) {
+    try {
+      const command = JSON.parse(message.toString());
+      
+      if (command.action === 'restart') {
+        console.log('Restart command received');
+        // Implement restart logic
+      } else if (command.action === 'update_config') {
+        console.log('Update config command received:', command.config);
+        // Implement config update logic
+      }
+    } catch (error) {
+      console.error('Error parsing command:', error);
+    }
+  }
+});
+
+// Function to generate random sensor data
+function getSensorData() {
+  return {
+    timestamp: Date.now(),
+    temperature: (20 + Math.random() * 10).toFixed(2),
+    humidity: (50 + Math.random() * 20).toFixed(2),
+    cpu_usage: (Math.random() * 100).toFixed(2),
+    hostname: os.hostname(),
+    platform: os.platform(),
+    uptime: os.uptime()
+  };
+}
+
+// Function to start publishing data periodically
+function startPublishing() {
+  // Publish data immediately on start
+  publishData();
+  
+  // Then publish every 10 seconds
+  setInterval(publishData, 10000);
+}
+
+// Function to publish sensor data
+function publishData() {
+  const data = getSensorData();
+  client.publish(DATA_TOPIC, JSON.stringify(data), { qos: 0 });
+  console.log('Published data:', data);
+}
+
+// Handle application shutdown
+process.on('SIGINT', () => {
+  console.log('Shutting down...');
+  
+  // Publish offline status
+  client.publish(STATUS_TOPIC, 'offline', { qos: 1, retain: true }, () => {
+    // End MQTT connection
+    client.end(true, () => {
+      console.log('MQTT connection closed');
+      process.exit(0);
+    });
+  });
+});</code></pre>
+                        </div>
+
+                        <h6 class="mt-4 mb-2"><i class="fas fa-project-diagram me-2"></i>Class-based Example</h6>
+                        <div class="code-container">
+                            <button class="copy-btn" data-clipboard-target="#nodejs-class">Copy</button>
+                            <pre><code class="language-javascript" id="nodejs-class">const mqtt = require('mqtt');
+const os = require('os');
+const EventEmitter = require('events');
+
+class SmartLilyClient extends EventEmitter {
+  constructor(options = {}) {
+    super();
+    
+    // Configure options with defaults
+    this.config = {
+      mqtt_server: options.mqtt_server || '<%= process.env.MQTT_HOST || 'your-mqtt-server.local' %>',
+      mqtt_port: options.mqtt_port || <%= port %>,
+      mqtt_user: options.mqtt_user || '',
+      mqtt_password: options.mqtt_password || '',
+      client_id: options.client_id || `nodejs-client-${os.hostname()}-${Math.floor(Math.random() * 10000)}`,
+      base_topic: options.base_topic || 'devices/nodejs-client',
+      publish_interval: options.publish_interval || 10000, // 10 seconds
+      debug: options.debug || false
+    };
+    
+    // Define topics
+    this.topics = {
+      status: `${this.config.base_topic}/status`,
+      data: `${this.config.base_topic}/data`,
+      command: `${this.config.base_topic}/commands`,
+      logs: `${this.config.base_topic}/logs`
+    };
+    
+    // Client state
+    this.client = null;
+    this.connected = false;
+    this.publishTimer = null;
+    
+    // Command handlers
+    this.commandHandlers = new Map();
+    
+    // Register default command handlers
+    this._registerDefaultHandlers();
+  }
+  
+  // Connect to MQTT broker
+  connect() {
+    const { mqtt_server, mqtt_port, mqtt_user, mqtt_password, client_id, debug } = this.config;
+    const mqtt_url = `mqtt://${mqtt_server}:${mqtt_port}`;
+    
+    // Build connection options
+    const options = {
+      clientId: client_id,
+      clean: true,
+      connectTimeout: 4000,
+      reconnectPeriod: 1000,
+      will: {
+        topic: this.topics.status,
+        payload: 'offline',
+        qos: 1,
+        retain: true
+      }
+    };
+    
+    // Add auth if provided
+    if (mqtt_user && mqtt_password) {
+      options.username = mqtt_user;
+      options.password = mqtt_password;
+    }
+    
+    // Create and connect client
+    this.client = mqtt.connect(mqtt_url, options);
+    
+    // Setup event handlers
+    this.client.on('connect', this._handleConnect.bind(this));
+    this.client.on('reconnect', this._handleReconnect.bind(this));
+    this.client.on('error', this._handleError.bind(this));
+    this.client.on('offline', this._handleOffline.bind(this));
+    this.client.on('message', this._handleMessage.bind(this));
+    
+    if (debug) {
+      console.log(`Connecting to MQTT broker at ${mqtt_url}`);
+    }
+    
+    return this;
+  }
+  
+  // Disconnect from MQTT broker
+  disconnect() {
+    return new Promise((resolve) => {
+      if (!this.client) {
+        resolve();
+        return;
+      }
+      
+      // Clear publish timer
+      if (this.publishTimer) {
+        clearInterval(this.publishTimer);
+        this.publishTimer = null;
+      }
+      
+      // Publish offline status if connected
+      if (this.connected) {
+        this.client.publish(this.topics.status, 'offline', { qos: 1, retain: true }, () => {
+          this.client.end(true, () => {
+            this.connected = false;
+            this.client = null;
+            if (this.config.debug) {
+              console.log('Disconnected from MQTT broker');
+            }
+            resolve();
+          });
+        });
+      } else {
+        this.client.end(true, () => {
+          this.client = null;
+          resolve();
+        });
+      }
+    });
+  }
+  
+  // Start publishing data
+  startPublishing() {
+    if (!this.connected) {
+      throw new Error('Cannot start publishing: Not connected to MQTT broker');
+    }
+    
+    // Clear existing timer if any
+    if (this.publishTimer) {
+      clearInterval(this.publishTimer);
+    }
+    
+    // Publish immediately
+    this.publishData();
+    
+    // Setup interval
+    this.publishTimer = setInterval(() => {
+      this.publishData();
+    }, this.config.publish_interval);
+    
+    if (this.config.debug) {
+      console.log(`Publishing data every ${this.config.publish_interval / 1000} seconds`);
+    }
+    
+    return this;
+  }
+  
+  // Stop publishing data
+  stopPublishing() {
+    if (this.publishTimer) {
+      clearInterval(this.publishTimer);
+      this.publishTimer = null;
+      
+      if (this.config.debug) {
+        console.log('Stopped publishing data');
+      }
+    }
+    
+    return this;
+  }
+  
+  // Register a command handler
+  registerCommand(command, handler) {
+    if (typeof handler !== 'function') {
+      throw new Error('Command handler must be a function');
+    }
+    
+    this.commandHandlers.set(command, handler);
+    
+    if (this.config.debug) {
+      console.log(`Registered handler for command: ${command}`);
+    }
+    
+    return this;
+  }
+  
+  // Publish data to MQTT broker
+  publishData() {
+    if (!this.connected || !this.client) return;
+    
+    const data = this.getData();
+    this.publish(this.topics.data, data);
+    
+    if (this.config.debug) {
+      console.log('Published data:', data);
+    }
+    
+    return this;
+  }
+  
+  // Get data to publish - override this method in subclasses
+  getData() {
+    return {
+      timestamp: Date.now(),
+      temperature: parseFloat((20 + Math.random() * 10).toFixed(2)),
+      humidity: parseFloat((50 + Math.random() * 20).toFixed(2)),
+      cpu_usage: parseFloat((Math.random() * 100).toFixed(2)),
+      hostname: os.hostname(),
+      platform: os.platform(),
+      uptime: os.uptime()
+    };
+  }
+  
+  // Publish a message to a topic
+  publish(topic, message, options = {}) {
+    if (!this.connected || !this.client) {
+      throw new Error('Cannot publish: Not connected to MQTT broker');
+    }
+    
+    const fullTopic = topic.startsWith(this.config.base_topic) ? 
+      topic : `${this.config.base_topic}/${topic}`;
+    
+    const formattedMessage = typeof message === 'object' ? 
+      JSON.stringify(message) : message;
+    
+    this.client.publish(fullTopic, formattedMessage, options);
+    return this;
+  }
+  
+  // Subscribe to a topic
+  subscribe(topic, options = { qos: 1 }) {
+    if (!this.connected || !this.client) {
+      throw new Error('Cannot subscribe: Not connected to MQTT broker');
+    }
+    
+    const fullTopic = topic.startsWith(this.config.base_topic) ? 
+      topic : `${this.config.base_topic}/${topic}`;
+    
+    this.client.subscribe(fullTopic, options);
+    
+    if (this.config.debug) {
+      console.log(`Subscribed to ${fullTopic}`);
+    }
+    
+    return this;
+  }
+  
+  // Publish device info
+  publishDeviceInfo() {
+    const info = {
+      client_id: this.config.client_id,
+      hostname: os.hostname(),
+      platform: os.platform(),
+      arch: os.arch(),
+      version: '1.0.0',
+      uptime: os.uptime(),
+      capabilities: ['temperature', 'humidity', 'cpu_usage']
+    };
+    
+    this.publish(`${this.config.base_topic}/info`, info, { retain: true });
+    return this;
+  }
+  
+  // Private handlers
+  _handleConnect() {
+    this.connected = true;
+    
+    // Publish online status
+    this.client.publish(this.topics.status, 'online', { qos: 1, retain: true });
+    
+    // Subscribe to command topic
+    this.client.subscribe(this.topics.command, { qos: 1 });
+    
+    // Publish device info
+    this.publishDeviceInfo();
+    
+    if (this.config.debug) {
+      console.log('Connected to MQTT broker');
+    }
+    
+    this.emit('connect');
+  }
+  
+  _handleReconnect() {
+    if (this.config.debug) {
+      console.log('Reconnecting to MQTT broker...');
+    }
+    this.emit('reconnect');
+  }
+  
+  _handleError(error) {
+    if (this.config.debug) {
+      console.error('MQTT connection error:', error);
+    }
+    this.emit('error', error);
+  }
+  
+  _handleOffline() {
+    this.connected = false;
+    if (this.config.debug) {
+      console.log('MQTT client is offline');
+    }
+    this.emit('offline');
+  }
+  
+  _handleMessage(topic, message) {
+    const messageStr = message.toString();
+    
+    if (this.config.debug) {
+      console.log(`Message received on ${topic}: ${messageStr}`);
+    }
+    
+    // Handle commands
+    if (topic === this.topics.command) {
+      try {
+        const command = JSON.parse(messageStr);
+        const action = command.action;
+        
+        if (action && this.commandHandlers.has(action)) {
+          const handler = this.commandHandlers.get(action);
+          handler(command);
+          this.emit('command', { action, command });
+        } else {
+          if (this.config.debug) {
+            console.warn(`No handler registered for command: ${action}`);
+          }
+        }
+      } catch (error) {
+        if (this.config.debug) {
+          console.error('Error parsing command:', error);
+        }
+      }
+    }
+    
+    // Forward all messages as events
+    this.emit('message', { topic, message: messageStr });
+  }
+  
+  _registerDefaultHandlers() {
+    // Register the ping command
+    this.registerCommand('ping', (command) => {
+      this.publish(`${this.config.base_topic}/response`, {
+        type: 'pong',
+        timestamp: Date.now(),
+        uptime: os.uptime()
+      });
+    });
+    
+    // Register the getDeviceInfo command
+    this.registerCommand('getDeviceInfo', (command) => {
+      this.publishDeviceInfo();
+    });
+  }
+}
+
+// Example usage
+const client = new SmartLilyClient({
+  base_topic: 'devices/my-device',
+  debug: true
+});
+
+// Register a custom command handler
+client.registerCommand('restart', (command) => {
+  console.log('Restart command received:', command);
+  // Implement restart logic
+});
+
+// Connect and start publishing
+client.connect().startPublishing();
+
+// Handle application shutdown
+process.on('SIGINT', async () => {
+  console.log('Shutting down...');
+  await client.disconnect();
+  process.exit(0);
+});</code></pre>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Web Browser (JavaScript) -->
+                <div id="javascript" class="card shadow-sm mb-4 code-section">
+                    <div class="card-header bg-warning text-white">
+                        <h5 class="mb-0"><i class="fab fa-js me-2"></i>Web Browser (JavaScript)</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>This example shows how to connect to the Smart Lily MQTT server directly from a web browser using MQTT over WebSockets.</p>
+                        
+                        <h6 class="mt-4 mb-2"><i class="fas fa-info-circle me-2"></i>Prerequisites</h6>
+                        <p>To use MQTT in a browser, you need to include the MQTT.js library:</p>
+                        <pre><code class="language-html">&lt;script src="https://unpkg.com/mqtt/dist/mqtt.min.js"&gt;&lt;/script&gt;</code></pre>
+                        
+                        <h6 class="mt-4 mb-2"><i class="fas fa-code me-2"></i>Basic Example</h6>
+                        <div class="code-container">
+                            <button class="copy-btn" data-clipboard-target="#browser-basic">Copy</button>
+                            <pre><code class="language-html" id="browser-basic">&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+    &lt;meta charset="UTF-8"&gt;
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+    &lt;title&gt;MQTT Browser Client&lt;/title&gt;
+    &lt;script src="https://unpkg.com/mqtt/dist/mqtt.min.js"&gt;&lt;/script&gt;
+    &lt;style&gt;
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        .connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        #messages {
+            height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+        }
+        .message {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+        }
+        .sent {
+            background-color: #e6f7ff;
+        }
+        .received {
+            background-color: #f0f0f0;
+        }
+    &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;div class="container"&gt;
+        &lt;h1&gt;MQTT Browser Client&lt;/h1&gt;
+        
+        &lt;div class="card"&gt;
+            &lt;h2&gt;Connection&lt;/h2&gt;
+            &lt;div id="status" class="status disconnected"&gt;Disconnected&lt;/div&gt;
+            
+            &lt;div class="form-group"&gt;
+                &lt;label for="broker"&gt;MQTT Broker (WebSocket URL)&lt;/label&gt;
+                &lt;input type="text" id="broker" value="ws://<%= process.env.MQTT_HOST || 'your-mqtt-server.local' %>:<%= wsPort %>" /&gt;
+            &lt;/div&gt;
+            
+            &lt;div class="form-group"&gt;
+                &lt;label for="clientId"&gt;Client ID&lt;/label&gt;
+                &lt;input type="text" id="clientId" value="browser-client-" /&gt;
+            &lt;/div&gt;
+            
+            &lt;div class="form-group"&gt;
+                &lt;label for="username"&gt;Username (if required)&lt;/label&gt;
+                &lt;input type="text" id="username" placeholder="Leave empty if not required" /&gt;
+            &lt;/div&gt;
+            
+            &lt;div class="form-group"&gt;
+                &lt;label for="password"&gt;Password (if required)&lt;/label&gt;
+                &lt;input type="password" id="password" placeholder="Leave empty if not required" /&gt;
+            &lt;/div&gt;
+            
+            &lt;div&gt;
+                &lt;button id="connectBtn"&gt;Connect&lt;/button&gt;
+                &lt;button id="disconnectBtn" disabled&gt;Disconnect&lt;/button&gt;
+            &lt;/div&gt;
+        &lt;/div&gt;
+        
+        &lt;div class="card"&gt;
+            &lt;h2&gt;Subscribe&lt;/h2&gt;
+            &lt;div class="form-group"&gt;
+                &lt;label for="subscribeTopic"&gt;Topic&lt;/label&gt;
+                &lt;input type="text" id="subscribeTopic" value="test/topic" /&gt;
+            &lt;/div&gt;
+            &lt;button id="subscribeBtn" disabled&gt;Subscribe&lt;/button&gt;
+        &lt;/div&gt;
+        
+        &lt;div class="card"&gt;
+            &lt;h2&gt;Publish&lt;/h2&gt;
+            &lt;div class="form-group"&gt;
+                &lt;label for="publishTopic"&gt;Topic&lt;/label&gt;
+                &lt;input type="text" id="publishTopic" value="test/topic" /&gt;
+            &lt;/div&gt;
+            &lt;div class="form-group"&gt;
+                &lt;label for="publishMessage"&gt;Message&lt;/label&gt;
+                &lt;textarea id="publishMessage" rows="4"&gt;{"message": "Hello from browser client"}&lt;/textarea&gt;
+            &lt;/div&gt;
+            &lt;div class="form-group"&gt;
+                &lt;input type="checkbox" id="retainMessage" /&gt;
+                &lt;label for="retainMessage" style="display: inline;"&gt;Retain Message&lt;/label&gt;
+            &lt;/div&gt;
+            &lt;button id="publishBtn" disabled&gt;Publish&lt;/button&gt;
+        &lt;/div&gt;
+        
+        &lt;div class="card"&gt;
+            &lt;h2&gt;Messages&lt;/h2&gt;
+            &lt;div id="messages"&gt;&lt;/div&gt;
+            &lt;button id="clearBtn"&gt;Clear Messages&lt;/button&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+    
+    &lt;script&gt;
+        // Generate a random client ID suffix
+        document.getElementById('clientId').value += Math.random().toString(16).substring(2, 8);
+        
+        // Elements
+        const brokerInput = document.getElementById('broker');
+        const clientIdInput = document.getElementById('clientId');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const connectBtn = document.getElementById('connectBtn');
+        const disconnectBtn = document.getElementById('disconnectBtn');
+        const subscribeTopicInput = document.getElementById('subscribeTopic');
+        const subscribeBtn = document.getElementById('subscribeBtn');
+        const publishTopicInput = document.getElementById('publishTopic');
+        const publishMessageInput = document.getElementById('publishMessage');
+        const retainMessageCheckbox = document.getElementById('retainMessage');
+        const publishBtn = document.getElementById('publishBtn');
+        const messagesDiv = document.getElementById('messages');
+        const clearBtn = document.getElementById('clearBtn');
+        const statusDiv = document.getElementById('status');
+        
+        // MQTT client
+        let client = null;
+        let connected = false;
+        
+        // Connect to MQTT broker
+        connectBtn.addEventListener('click', () => {
+            if (connected) return;
+            
+            const broker = brokerInput.value;
+            const clientId = clientIdInput.value;
+            const username = usernameInput.value;
+            const password = passwordInput.value;
+            
+            // Connection options
+            const options = {
+                clientId,
+                clean: true,
+                reconnectPeriod: 5000,
+                connectTimeout: 30000
+            };
+            
+            // Add auth if provided
+            if (username) {
+                options.username = username;
+                options.password = password;
+            }
+            
+            try {
+                // Create client and connect
+                client = mqtt.connect(broker, options);
+                
+                // Handle connection events
+                client.on('connect', () => {
+                    connected = true;
+                    statusDiv.innerHTML = 'Connected';
+                    statusDiv.className = 'status connected';
+                    
+                    connectBtn.disabled = true;
+                    disconnectBtn.disabled = false;
+                    subscribeBtn.disabled = false;
+                    publishBtn.disabled = false;
+                    
+                    addMessage('System', 'Connected to MQTT broker');
+                });
+                
+                client.on('reconnect', () => {
+                    statusDiv.innerHTML = 'Reconnecting...';
+                    statusDiv.className = 'status disconnected';
+                    addMessage('System', 'Reconnecting to MQTT broker...');
+                });
+                
+                client.on('error', (error) => {
+                    statusDiv.innerHTML = 'Error: ' + error.message;
+                    statusDiv.className = 'status disconnected';
+                    addMessage('Error', error.message);
+                });
+                
+                client.on('disconnect', () => {
+                    connected = false;
+                    statusDiv.innerHTML = 'Disconnected';
+                    statusDiv.className = 'status disconnected';
+                    addMessage('System', 'Disconnected from MQTT broker');
+                });
+                
+                client.on('offline', () => {
+                    statusDiv.innerHTML = 'Offline';
+                    statusDiv.className = 'status disconnected';
+                    addMessage('System', 'MQTT client is offline');
+                });
+                
+                client.on('message', (topic, message) => {
+                    const msg = message.toString();
+                    addMessage('Received', `Topic: ${topic}, Message: ${msg}`);
+                    
+                    // Try to parse as JSON
+                    try {
+                        const jsonMsg = JSON.parse(msg);
+                        console.log('Received JSON message:', jsonMsg);
+                    } catch (e) {
+                        // Not JSON, that's fine
+                    }
+                });
+            } catch (error) {
+                statusDiv.innerHTML = 'Error: ' + error.message;
+                statusDiv.className = 'status disconnected';
+                addMessage('Error', error.message);
+            }
+        });
+        
+        // Disconnect from MQTT broker
+        disconnectBtn.addEventListener('click', () => {
+            if (!connected || !client) return;
+            
+            client.end();
+            client = null;
+            connected = false;
+            
+            connectBtn.disabled = false;
+            disconnectBtn.disabled = true;
+            subscribeBtn.disabled = true;
+            publishBtn.disabled = true;
+            
+            statusDiv.innerHTML = 'Disconnected';
+            statusDiv.className = 'status disconnected';
+        });
+        
+        // Subscribe to topic
+        subscribeBtn.addEventListener('click', () => {
+            if (!connected || !client) return;
+            
+            const topic = subscribeTopicInput.value;
+            if (!topic) {
+                addMessage('Error', 'Topic cannot be empty');
+                return;
+            }
+            
+            client.subscribe(topic, (err) => {
+                if (err) {
+                    addMessage('Error', `Failed to subscribe to ${topic}: ${err.message}`);
+                } else {
+                    addMessage('System', `Subscribed to ${topic}`);
+                }
+            });
+        });
+        
+        // Publish message
+        publishBtn.addEventListener('click', () => {
+            if (!connected || !client) return;
+            
+            const topic = publishTopicInput.value;
+            const message = publishMessageInput.value;
+            const retain = retainMessageCheckbox.checked;
+            
+            if (!topic) {
+                addMessage('Error', 'Topic cannot be empty');
+                return;
+            }
+            
+            if (!message) {
+                addMessage('Error', 'Message cannot be empty');
+                return;
+            }
+            
+            client.publish(topic, message, { retain }, (err) => {
+                if (err) {
+                    addMessage('Error', `Failed to publish to ${topic}: ${err.message}`);
+                } else {
+                    addMessage('Sent', `Topic: ${topic}, Message: ${message}, Retain: ${retain}`);
+                }
+            });
+        });
+        
+        // Clear messages
+        clearBtn.addEventListener('click', () => {
+            messagesDiv.innerHTML = '';
+        });
+        
+        // Add message to the messages div
+        function addMessage(type, message) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message ' + (type === 'Sent' ? 'sent' : (type === 'Received' ? 'received' : ''));
+            
+            const time = new Date().toLocaleTimeString();
+            messageDiv.innerHTML = `<strong>${time} [${type}]:</strong> ${message}`;
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+    &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+                        </div>
+
+                        <h6 class="mt-4 mb-2"><i class="fas fa-puzzle-piece me-2"></i>MQTT.js Method Reference</h6>
+                        <p>Here's a quick reference to common MQTT.js methods that you can use in your browser-based applications:</p>
+                        
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Method</th>
+                                    <th>Description</th>
+                                    <th>Example</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>mqtt.connect(url, options)</code></td>
+                                    <td>Connect to an MQTT broker</td>
+                                    <td><code>const client = mqtt.connect('ws://broker.com:8080', {clientId: 'browser'})</code></td>
+                                </tr>
+                                <tr>
+                                    <td><code>client.subscribe(topic, [options], [callback])</code></td>
+                                    <td>Subscribe to a topic or topics</td>
+                                    <td><code>client.subscribe('sensors/+/temperature')</code></td>
+                                </tr>
+                                <tr>
+                                    <td><code>client.publish(topic, message, [options], [callback])</code></td>
+                                    <td>Publish a message to a topic</td>
+                                    <td><code>client.publish('control/led', 'ON', {retain: true})</code></td>
+                                </tr>
+                                <tr>
+                                    <td><code>client.unsubscribe(topic, [options], [callback])</code></td>
+                                    <td>Unsubscribe from a topic or topics</td>
+                                    <td><code>client.unsubscribe('sensors/outdated')</code></td>
+                                </tr>
+                                <tr>
+                                    <td><code>client.end([force], [options], [callback])</code></td>
+                                    <td>Close the connection</td>
+                                    <td><code>client.end()</code></td>
+                                </tr>
+                                <tr>
+                                    <td><code>client.reconnect()</code></td>
+                                    <td>Manually reconnect to the broker</td>
+                                    <td><code>client.reconnect()</code></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Summary -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-book me-2"></i>Additional Resources</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>Here are some additional resources to help you work with the Smart Lily MQTT Server:</p>
+                        
+                        <h6 class="mt-3 mb-2"><i class="fas fa-link me-2"></i>Documentation Links</h6>
+                        <ul>
+                            <li><a href="https://mqtt.org/mqtt-specification/" target="_blank">MQTT Protocol Specification</a></li>
+                            <li><a href="https://github.com/mqttjs/MQTT.js" target="_blank">MQTT.js Documentation</a></li>
+                            <li><a href="https://www.eclipse.org/paho/index.php?page=clients/python/index.php" target="_blank">Eclipse Paho Python Client</a></li>
+                            <li><a href="https://pubsubclient.knolleary.net/" target="_blank">PubSubClient for Arduino</a></li>
+                            <li><a href="https://docs.micropython.org/en/latest/library/umqtt.simple.html" target="_blank">MicroPython MQTT Documentation</a></li>
+                        </ul>
+                        
+                        <h6 class="mt-3 mb-2"><i class="fas fa-lightbulb me-2"></i>Best Practices</h6>
+                        <ol>
+                            <li><strong>Use unique client IDs</strong> - Ensure every client has a unique identifier</li>
+                            <li><strong>Implement Last Will and Testament (LWT)</strong> - For proper status handling</li>
+                            <li><strong>Use QoS appropriately</strong> - QoS 0 for frequent updates, QoS 1 for important messages</li>
+                            <li><strong>Structure topics hierarchically</strong> - e.g., <code>home/living-room/temperature</code></li>
+                            <li><strong>Implement reconnection logic</strong> - Handle network interruptions gracefully</li>
+                            <li><strong>Use JSON for complex data</strong> - Provides better structure for complex messages</li>
+                            <li><strong>Handle error cases</strong> - Gracefully handle connection errors and timeouts</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/languages/arduino.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/languages/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/languages/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.11/clipboard.min.js"></script>
+    <script src="/js/dashboard.js"></script>
+    <script>
+        // Initialize code highlighting
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize highlighting
+            document.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightElement(block);
+            });
+            
+            // Initialize clipboard
+            const clipboard = new ClipboardJS('.copy-btn');
+            
+            clipboard.on('success', function(e) {
+                const btn = e.trigger;
+                btn.textContent = 'Copied!';
+                setTimeout(() => {
+                    btn.textContent = 'Copy';
+                }, 2000);
+                e.clearSelection();
+            });
+            
+            // Connect to socket.io for server status
+            const socket = io();
+            const statusBadge = document.getElementById('status-badge');
+            
+            socket.on('connect', () => {
+                statusBadge.innerHTML = '<i class="fas fa-plug me-1"></i>Connected';
+                statusBadge.className = 'badge bg-success';
+            });
+            
+            socket.on('disconnect', () => {
+                statusBadge.innerHTML = '<i class="fas fa-plug-circle-xmark me-1"></i>Disconnected';
+                statusBadge.className = 'badge bg-danger';
+            });
+        });
+    </script>
+</body>
+</html> 

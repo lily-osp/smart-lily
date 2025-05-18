@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .chart-container {
+      position: relative;
+      height: 300px;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+    .gauge-container {
+      height: 180px;
+      position: relative;
+      margin-bottom: 10px;
+    }
+    .gauge-value {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      text-align: center;
+      font-size: 1.2em;
+      font-weight: bold;
+    }
+    .topic-name {
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+  <%- include('partials/navbar', { active: 'visualization' }) %>
+
+  <div class="container mt-4">
+    <h1><i class="bi bi-graph-up"></i> Data Visualization</h1>
+    
+    <div class="row mt-4">
+      <div class="col-lg-4">
+        <div class="card mb-4">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Topic Selection</h5>
+            <button class="btn btn-sm btn-primary" id="refreshTopicsBtn">
+              <i class="bi bi-arrow-clockwise"></i> Refresh
+            </button>
+          </div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label for="topicSelect" class="form-label">Select Topic</label>
+              <select class="form-select" id="topicSelect">
+                <option value="" selected disabled>Choose a topic</option>
+              </select>
+            </div>
+            
+            <div class="mb-3">
+              <label class="form-label">Time Range</label>
+              <div class="d-flex">
+                <select class="form-select me-2" id="timeRangeSelect">
+                  <option value="10m">Last 10 minutes</option>
+                  <option value="30m">Last 30 minutes</option>
+                  <option value="1h">Last hour</option>
+                  <option value="6h">Last 6 hours</option>
+                  <option value="24h">Last 24 hours</option>
+                  <option value="custom">Custom range</option>
+                </select>
+                <button class="btn btn-primary" id="applyRangeBtn">Apply</button>
+              </div>
+            </div>
+            
+            <div id="customDateContainer" class="mb-3 d-none">
+              <div class="row g-2">
+                <div class="col-6">
+                  <label for="startDate" class="form-label">Start Date</label>
+                  <input type="datetime-local" class="form-control" id="startDate">
+                </div>
+                <div class="col-6">
+                  <label for="endDate" class="form-label">End Date</label>
+                  <input type="datetime-local" class="form-control" id="endDate">
+                </div>
+              </div>
+            </div>
+            
+            <hr>
+            
+            <div class="mb-3">
+              <label class="form-label">Visualization Type</label>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="chartType" id="lineChartRadio" value="line" checked>
+                <label class="form-check-label" for="lineChartRadio">
+                  Line Chart
+                </label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="chartType" id="gaugeChartRadio" value="gauge">
+                <label class="form-check-label" for="gaugeChartRadio">
+                  Gauge (real-time only)
+                </label>
+              </div>
+            </div>
+            
+            <div id="gaugeSettingsContainer" class="mb-3 d-none">
+              <div class="row g-2">
+                <div class="col-6">
+                  <label for="gaugeMin" class="form-label">Min Value</label>
+                  <input type="number" class="form-control" id="gaugeMin" value="0">
+                </div>
+                <div class="col-6">
+                  <label for="gaugeMax" class="form-label">Max Value</label>
+                  <input type="number" class="form-control" id="gaugeMax" value="100">
+                </div>
+              </div>
+            </div>
+            
+            <div class="d-grid">
+              <button class="btn btn-success" id="createVisualizationBtn">
+                <i class="bi bi-plus-circle"></i> Create Visualization
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-header">
+            <h5 class="mb-0">Compare Topics</h5>
+          </div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label class="form-label">Topics to Compare</label>
+              <div id="comparisonTopics"></div>
+              <div class="input-group mt-2">
+                <select class="form-select" id="addComparisonTopicSelect">
+                  <option value="" selected disabled>Choose a topic</option>
+                </select>
+                <button class="btn btn-outline-secondary" id="addComparisonBtn">
+                  <i class="bi bi-plus"></i>
+                </button>
+              </div>
+            </div>
+            
+            <div class="d-grid">
+              <button class="btn btn-primary" id="compareBtn" disabled>
+                <i class="bi bi-graph-up-arrow"></i> Compare
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-lg-8">
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5 class="mb-0">Visualizations</h5>
+          </div>
+          <div class="card-body">
+            <div id="visualizationsContainer" class="mb-4">
+              <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> Select a topic and create a visualization to get started.
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card mb-4 d-none" id="comparisonChartCard">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Topic Comparison</h5>
+            <button class="btn btn-sm btn-danger" id="closeComparisonBtn">
+              <i class="bi bi-x"></i>
+            </button>
+          </div>
+          <div class="card-body">
+            <div class="chart-container">
+              <canvas id="comparisonChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/socket.io/client-dist/socket.io.min.js"></script>
+  <script src="/js/visualization.js"></script>
+  <script>
+    // Connect to Socket.IO for real-time updates
+    const socket = io();
+    
+    // DOM elements
+    const topicSelect = document.getElementById('topicSelect');
+    const timeRangeSelect = document.getElementById('timeRangeSelect');
+    const customDateContainer = document.getElementById('customDateContainer');
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
+    const lineChartRadio = document.getElementById('lineChartRadio');
+    const gaugeChartRadio = document.getElementById('gaugeChartRadio');
+    const gaugeSettingsContainer = document.getElementById('gaugeSettingsContainer');
+    const gaugeMinInput = document.getElementById('gaugeMin');
+    const gaugeMaxInput = document.getElementById('gaugeMax');
+    const createVisualizationBtn = document.getElementById('createVisualizationBtn');
+    const visualizationsContainer = document.getElementById('visualizationsContainer');
+    const refreshTopicsBtn = document.getElementById('refreshTopicsBtn');
+    const applyRangeBtn = document.getElementById('applyRangeBtn');
+    const addComparisonTopicSelect = document.getElementById('addComparisonTopicSelect');
+    const addComparisonBtn = document.getElementById('addComparisonBtn');
+    const comparisonTopics = document.getElementById('comparisonTopics');
+    const compareBtn = document.getElementById('compareBtn');
+    const comparisonChartCard = document.getElementById('comparisonChartCard');
+    const closeComparisonBtn = document.getElementById('closeComparisonBtn');
+    
+    // State
+    let activeVisualizations = [];
+    let selectedComparisonTopics = [];
+    let allTopics = [];
+    
+    // Initialize with current date
+    const now = new Date();
+    endDateInput.value = now.toISOString().substring(0, 16);
+    const oneHourAgo = new Date(now.getTime() - (60 * 60 * 1000));
+    startDateInput.value = oneHourAgo.toISOString().substring(0, 16);
+    
+    // Load topics on page load
+    window.addEventListener('DOMContentLoaded', loadTopics);
+    
+    // Event listeners
+    timeRangeSelect.addEventListener('change', function() {
+      if (this.value === 'custom') {
+        customDateContainer.classList.remove('d-none');
+      } else {
+        customDateContainer.classList.add('d-none');
+      }
+    });
+    
+    gaugeChartRadio.addEventListener('change', function() {
+      if (this.checked) {
+        gaugeSettingsContainer.classList.remove('d-none');
+      } else {
+        gaugeSettingsContainer.classList.add('d-none');
+      }
+    });
+    
+    lineChartRadio.addEventListener('change', function() {
+      if (this.checked) {
+        gaugeSettingsContainer.classList.add('d-none');
+      }
+    });
+    
+    createVisualizationBtn.addEventListener('click', createVisualization);
+    refreshTopicsBtn.addEventListener('click', loadTopics);
+    applyRangeBtn.addEventListener('click', applyTimeRangeToCharts);
+    addComparisonBtn.addEventListener('click', addTopicToComparison);
+    compareBtn.addEventListener('click', createComparisonChart);
+    closeComparisonBtn.addEventListener('click', closeComparisonChart);
+    
+    // Socket.IO events
+    socket.on('mqtt-message', handleMqttMessage);
+    
+    // Functions
+    async function loadTopics() {
+      try {
+        const response = await fetch('/api/topics');
+        const topics = await response.json();
+        allTopics = topics;
+        
+        // Clear select options
+        topicSelect.innerHTML = '<option value="" selected disabled>Choose a topic</option>';
+        addComparisonTopicSelect.innerHTML = '<option value="" selected disabled>Choose a topic</option>';
+        
+        // Add new options
+        topics.forEach(topic => {
+          const option = document.createElement('option');
+          option.value = topic.topic;
+          option.textContent = topic.topic;
+          topicSelect.appendChild(option);
+          
+          const compOption = option.cloneNode(true);
+          addComparisonTopicSelect.appendChild(compOption);
+        });
+      } catch (error) {
+        console.error('Failed to load topics:', error);
+      }
+    }
+    
+    function createVisualization() {
+      const topic = topicSelect.value;
+      if (!topic) {
+        alert('Please select a topic');
+        return;
+      }
+      
+      const visualizationType = document.querySelector('input[name="chartType"]:checked').value;
+      
+      // Generate a unique ID for this visualization
+      const visId = `vis-${Date.now()}`;
+      
+      // Create visualization container
+      const visElement = document.createElement('div');
+      visElement.className = 'visualization-item mb-4';
+      visElement.dataset.id = visId;
+      visElement.dataset.topic = topic;
+      visElement.dataset.type = visualizationType;
+      
+      // Create visualization header
+      const header = document.createElement('div');
+      header.className = 'd-flex justify-content-between align-items-center mb-2';
+      
+      const topicName = document.createElement('h6');
+      topicName.className = 'mb-0 topic-name';
+      topicName.textContent = topic;
+      
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'btn btn-sm btn-outline-danger';
+      deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
+      deleteBtn.onclick = () => removeVisualization(visId);
+      
+      header.appendChild(topicName);
+      header.appendChild(deleteBtn);
+      
+      // Create chart container
+      const chartContainer = document.createElement('div');
+      chartContainer.className = visualizationType === 'gauge' ? 'gauge-container' : 'chart-container';
+      
+      const canvas = document.createElement('canvas');
+      canvas.id = `chart-${visId}`;
+      chartContainer.appendChild(canvas);
+      
+      // Add to visualization element
+      visElement.appendChild(header);
+      visElement.appendChild(chartContainer);
+      
+      // Add to container
+      if (visualizationsContainer.querySelector('.alert')) {
+        visualizationsContainer.innerHTML = '';
+      }
+      visualizationsContainer.appendChild(visElement);
+      
+      // Initialize the chart
+      if (visualizationType === 'line') {
+        const chart = window.SmartLilyCharts.initTopicHistoryChart(`chart-${visId}`, topic);
+        // Load initial historical data
+        loadHistoricalDataForChart(visId, topic);
+      } else if (visualizationType === 'gauge') {
+        const min = parseFloat(gaugeMinInput.value) || 0;
+        const max = parseFloat(gaugeMaxInput.value) || 100;
+        const chart = window.SmartLilyCharts.initGaugeChart(`chart-${visId}`, topic, min, max);
+        // Try to get current value
+        fetchCurrentValue(topic, visId);
+      }
+      
+      // Track active visualizations
+      activeVisualizations.push({
+        id: visId,
+        topic,
+        type: visualizationType
+      });
+    }
+    
+    async function loadHistoricalDataForChart(visId, topic) {
+      let startTime, endTime;
+      
+      const timeRange = timeRangeSelect.value;
+      if (timeRange === 'custom') {
+        startTime = new Date(startDateInput.value);
+        endTime = new Date(endDateInput.value);
+      } else {
+        // Calculate time based on selected range
+        endTime = new Date();
+        startTime = new Date();
+        
+        switch(timeRange) {
+          case '10m':
+            startTime.setMinutes(startTime.getMinutes() - 10);
+            break;
+          case '30m':
+            startTime.setMinutes(startTime.getMinutes() - 30);
+            break;
+          case '1h':
+            startTime.setHours(startTime.getHours() - 1);
+            break;
+          case '6h':
+            startTime.setHours(startTime.getHours() - 6);
+            break;
+          case '24h':
+            startTime.setHours(startTime.getHours() - 24);
+            break;
+        }
+      }
+      
+      await window.SmartLilyCharts.populateChartWithHistory(`chart-${visId}`, topic, startTime, endTime);
+    }
+    
+    function applyTimeRangeToCharts() {
+      activeVisualizations.forEach(vis => {
+        if (vis.type === 'line') {
+          loadHistoricalDataForChart(vis.id, vis.topic);
+        }
+      });
+    }
+    
+    async function fetchCurrentValue(topic, visId) {
+      try {
+        const response = await fetch(`/api/topics/${encodeURIComponent(topic)}`);
+        const data = await response.json();
+        
+        if (data.lastMessage) {
+          let value = data.lastMessage;
+          
+          // Try to parse if it's JSON
+          if (typeof value === 'string') {
+            try {
+              const parsed = JSON.parse(value);
+              if (typeof parsed === 'object' && parsed !== null) {
+                value = parsed.value !== undefined ? parsed.value : parsed;
+              } else {
+                value = parsed;
+              }
+            } catch (e) {
+              // Not JSON, try as number
+              const parsedValue = parseFloat(value);
+              if (!isNaN(parsedValue)) {
+                value = parsedValue;
+              }
+            }
+          }
+          
+          // Update gauge if numeric
+          if (typeof value === 'number') {
+            window.SmartLilyCharts.updateGaugeChart(`chart-${visId}`, value);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch current value:', error);
+      }
+    }
+    
+    function handleMqttMessage(message) {
+      const { topic, payload } = message;
+      
+      // Update all visualizations for this topic
+      activeVisualizations.forEach(vis => {
+        if (vis.topic === topic) {
+          if (vis.type === 'line') {
+            let value;
+            
+            // Try to parse the payload
+            if (typeof payload === 'string') {
+              try {
+                const parsed = JSON.parse(payload);
+                if (typeof parsed === 'object' && parsed !== null) {
+                  value = parsed.value !== undefined ? parsed.value : parsed;
+                } else {
+                  value = parsed;
+                }
+              } catch (e) {
+                // Not JSON, try as number
+                const parsedValue = parseFloat(payload);
+                if (!isNaN(parsedValue)) {
+                  value = parsedValue;
+                } else {
+                  value = payload;
+                }
+              }
+            } else {
+              value = payload;
+            }
+            
+            window.SmartLilyCharts.updateTopicHistoryChart(`chart-${vis.id}`, {
+              timestamp: new Date(),
+              value
+            });
+          } else if (vis.type === 'gauge') {
+            // Try to parse numeric value for gauge
+            let value = payload;
+            
+            if (typeof payload === 'string') {
+              try {
+                const parsed = JSON.parse(payload);
+                if (typeof parsed === 'object' && parsed !== null) {
+                  value = parsed.value !== undefined ? parsed.value : parsed;
+                } else {
+                  value = parsed;
+                }
+              } catch (e) {
+                const parsedValue = parseFloat(payload);
+                if (!isNaN(parsedValue)) {
+                  value = parsedValue;
+                }
+              }
+            }
+            
+            if (typeof value === 'number') {
+              window.SmartLilyCharts.updateGaugeChart(`chart-${vis.id}`, value);
+            }
+          }
+        }
+      });
+    }
+    
+    function removeVisualization(visId) {
+      // Remove from DOM
+      const element = document.querySelector(`.visualization-item[data-id="${visId}"]`);
+      if (element) {
+        element.remove();
+      }
+      
+      // Remove from tracking array
+      activeVisualizations = activeVisualizations.filter(vis => vis.id !== visId);
+      
+      // Show placeholder if no visualizations left
+      if (activeVisualizations.length === 0) {
+        visualizationsContainer.innerHTML = `
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> Select a topic and create a visualization to get started.
+          </div>
+        `;
+      }
+    }
+    
+    function addTopicToComparison() {
+      const topic = addComparisonTopicSelect.value;
+      
+      if (!topic) {
+        return;
+      }
+      
+      // Check if already in the list
+      if (selectedComparisonTopics.includes(topic)) {
+        return;
+      }
+      
+      // Add to tracking array
+      selectedComparisonTopics.push(topic);
+      
+      // Create UI element
+      const topicElement = document.createElement('div');
+      topicElement.className = 'mb-2 d-flex justify-content-between align-items-center p-2 border rounded';
+      topicElement.innerHTML = `
+        <span class="topic-name">${topic}</span>
+        <button class="btn btn-sm btn-outline-danger remove-topic" data-topic="${topic}">
+          <i class="bi bi-x"></i>
+        </button>
+      `;
+      
+      comparisonTopics.appendChild(topicElement);
+      
+      // Enable compare button if we have at least 2 topics
+      if (selectedComparisonTopics.length >= 2) {
+        compareBtn.disabled = false;
+      }
+      
+      // Add event listener for removal
+      topicElement.querySelector('.remove-topic').addEventListener('click', function() {
+        const topicToRemove = this.dataset.topic;
+        selectedComparisonTopics = selectedComparisonTopics.filter(t => t !== topicToRemove);
+        topicElement.remove();
+        
+        // Disable button if not enough topics
+        if (selectedComparisonTopics.length < 2) {
+          compareBtn.disabled = true;
+        }
+      });
+    }
+    
+    function createComparisonChart() {
+      if (selectedComparisonTopics.length < 2) {
+        return;
+      }
+      
+      // Show comparison chart card
+      comparisonChartCard.classList.remove('d-none');
+      
+      // Initialize the chart
+      const chart = window.SmartLilyCharts.initComparisonChart('comparisonChart', selectedComparisonTopics);
+      
+      // Fetch data for each topic
+      selectedComparisonTopics.forEach((topic, index) => {
+        fetchDataForComparisonChart(topic, index);
+      });
+    }
+    
+    async function fetchDataForComparisonChart(topic, datasetIndex) {
+      let startTime, endTime;
+      
+      const timeRange = timeRangeSelect.value;
+      if (timeRange === 'custom') {
+        startTime = new Date(startDateInput.value);
+        endTime = new Date(endDateInput.value);
+      } else {
+        // Calculate time based on selected range
+        endTime = new Date();
+        startTime = new Date();
+        
+        switch(timeRange) {
+          case '10m':
+            startTime.setMinutes(startTime.getMinutes() - 10);
+            break;
+          case '30m':
+            startTime.setMinutes(startTime.getMinutes() - 30);
+            break;
+          case '1h':
+            startTime.setHours(startTime.getHours() - 1);
+            break;
+          case '6h':
+            startTime.setHours(startTime.getHours() - 6);
+            break;
+          case '24h':
+            startTime.setHours(startTime.getHours() - 24);
+            break;
+        }
+      }
+      
+      try {
+        const history = await window.SmartLilyCharts.loadTopicHistory(topic, startTime, endTime);
+        
+        if (!history || history.length === 0) {
+          return;
+        }
+        
+        const chart = chartCache.get('comparisonChart');
+        if (!chart) return;
+        
+        // Add historical data points
+        history.forEach((point, i) => {
+          const timeStr = new Date(point.timestamp).toLocaleTimeString();
+          
+          // Only add time labels from the first dataset
+          if (datasetIndex === 0) {
+            chart.data.labels.push(timeStr);
+          }
+          
+          let value = point.payload;
+          try {
+            // Try to parse the payload as JSON
+            const parsedPayload = JSON.parse(point.payload);
+            if (typeof parsedPayload === 'object' && parsedPayload !== null) {
+              value = parsedPayload.value !== undefined ? parsedPayload.value : parsedPayload;
+            } else {
+              value = parsedPayload;
+            }
+          } catch (e) {
+            // If not JSON, try parsing as a number
+            const parsedValue = parseFloat(point.payload);
+            if (!isNaN(parsedValue)) {
+              value = parsedValue;
+            } else {
+              value = point.payload;
+            }
+          }
+          
+          // Only add numeric values to the chart
+          if (typeof value === 'number' && i < chart.data.labels.length) {
+            chart.data.datasets[datasetIndex].data[i] = value;
+          }
+        });
+        
+        chart.update();
+      } catch (error) {
+        console.error(`Failed to fetch data for ${topic}:`, error);
+      }
+    }
+    
+    function closeComparisonChart() {
+      comparisonChartCard.classList.add('d-none');
+      // Clear selected topics
+      selectedComparisonTopics = [];
+      comparisonTopics.innerHTML = '';
+      compareBtn.disabled = true;
+    }
+  </script>
+</body>
+</html> 

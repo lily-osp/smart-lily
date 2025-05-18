@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <%- include('partials/navbar', { active: 'webhooks' }) %>
+
+  <div class="container mt-4">
+    <h1><i class="bi bi-link-45deg"></i> Webhooks Management</h1>
+    <p class="lead">
+      Create webhooks to integrate Smart Lily with external services and applications.
+    </p>
+    
+    <div class="row mt-4">
+      <div class="col-lg-4">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="mb-0">Create Webhook</h5>
+          </div>
+          <div class="card-body">
+            <form id="webhookForm">
+              <div class="mb-3">
+                <label for="webhookName" class="form-label">Name</label>
+                <input type="text" class="form-control" id="webhookName" placeholder="My Service Integration" required>
+              </div>
+              
+              <div class="mb-3">
+                <label for="webhookUrl" class="form-label">URL</label>
+                <div class="input-group">
+                  <input type="url" class="form-control" id="webhookUrl" placeholder="https://example.com/webhook" required>
+                  <button class="btn btn-outline-secondary" type="button" id="testUrlBtn">Test</button>
+                </div>
+                <div class="form-text">The URL that will receive webhook events</div>
+                <div id="urlTestResult" class="mt-2"></div>
+              </div>
+              
+              <div class="mb-3">
+                <label class="form-label">Events</label>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" value="message" id="messageEvent" checked>
+                  <label class="form-check-label" for="messageEvent">
+                    Message Events
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" value="connection" id="connectionEvent">
+                  <label class="form-check-label" for="connectionEvent">
+                    Connection Events
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" value="automation" id="automationEvent">
+                  <label class="form-check-label" for="automationEvent">
+                    Automation Rule Events
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" value="system" id="systemEvent">
+                  <label class="form-check-label" for="systemEvent">
+                    System Events
+                  </label>
+                </div>
+              </div>
+              
+              <div class="mb-3">
+                <label class="form-label">Custom Headers (optional)</label>
+                <div id="headersContainer">
+                  <div class="d-flex gap-2 mb-2 header-row">
+                    <input type="text" class="form-control header-key" placeholder="Header Name">
+                    <input type="text" class="form-control header-value" placeholder="Value">
+                    <button type="button" class="btn btn-outline-danger remove-header">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="addHeaderBtn">
+                  <i class="bi bi-plus"></i> Add Header
+                </button>
+              </div>
+              
+              <div class="d-grid">
+                <button type="submit" class="btn btn-primary">
+                  <i class="bi bi-plus-circle"></i> Create Webhook
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-lg-8">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Configured Webhooks</h5>
+            <button class="btn btn-sm btn-outline-primary" id="refreshWebhooksBtn">
+              <i class="bi bi-arrow-clockwise"></i> Refresh
+            </button>
+          </div>
+          <div class="card-body">
+            <div id="webhooksContainer">
+              <div class="text-center py-4" id="loadingIndicator">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+              </div>
+              <div id="noWebhooksMessage" class="alert alert-info d-none">
+                <i class="bi bi-info-circle"></i> No webhooks configured yet. Create your first webhook to get started.
+              </div>
+              <div id="webhooksList"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card mt-4">
+          <div class="card-header">
+            <h5 class="mb-0">Webhook Documentation</h5>
+          </div>
+          <div class="card-body">
+            <h6>Event Types</h6>
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                  <th>Event</th>
+                  <th>Description</th>
+                  <th>Example Payload</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>message</code></td>
+                  <td>Triggered when a message is published to any topic</td>
+                  <td>
+                    <pre><code>{
+  "event": "message",
+  "timestamp": "2023-07-15T12:34:56Z",
+  "data": {
+    "topic": "home/temperature",
+    "payload": 23.5,
+    "retain": false,
+    "qos": 0
+  }
+}</code></pre>
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>connection</code></td>
+                  <td>Triggered when a client connects/disconnects</td>
+                  <td>
+                    <pre><code>{
+  "event": "connection",
+  "timestamp": "2023-07-15T12:34:56Z",
+  "data": {
+    "clientId": "device-123",
+    "timestamp": "2023-07-15T12:34:56Z"
+  }
+}</code></pre>
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>automation</code></td>
+                  <td>Triggered when an automation rule executes</td>
+                  <td>
+                    <pre><code>{
+  "event": "automation",
+  "timestamp": "2023-07-15T12:34:56Z",
+  "data": {
+    "ruleId": "rule-123",
+    "name": "Temperature Alert",
+    "triggerTopic": "home/temperature",
+    "triggerValue": 30
+  }
+}</code></pre>
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>system</code></td>
+                  <td>Triggered for system events like start/stop</td>
+                  <td>
+                    <pre><code>{
+  "event": "system",
+  "timestamp": "2023-07-15T12:34:56Z",
+  "data": {
+    "type": "server_start",
+    "uptime": 0
+  }
+}</code></pre>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Edit Webhook Modal -->
+  <div class="modal fade" id="editWebhookModal" tabindex="-1" aria-labelledby="editWebhookModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="editWebhookModalLabel">Edit Webhook</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="editWebhookForm">
+            <input type="hidden" id="editWebhookId">
+            <div class="mb-3">
+              <label for="editWebhookName" class="form-label">Name</label>
+              <input type="text" class="form-control" id="editWebhookName" required>
+            </div>
+            
+            <div class="mb-3">
+              <label for="editWebhookUrl" class="form-label">URL</label>
+              <input type="url" class="form-control" id="editWebhookUrl" required>
+            </div>
+            
+            <div class="mb-3">
+              <label class="form-label">Events</label>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" value="message" id="editMessageEvent">
+                <label class="form-check-label" for="editMessageEvent">
+                  Message Events
+                </label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" value="connection" id="editConnectionEvent">
+                <label class="form-check-label" for="editConnectionEvent">
+                  Connection Events
+                </label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" value="automation" id="editAutomationEvent">
+                <label class="form-check-label" for="editAutomationEvent">
+                  Automation Rule Events
+                </label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" value="system" id="editSystemEvent">
+                <label class="form-check-label" for="editSystemEvent">
+                  System Events
+                </label>
+              </div>
+            </div>
+            
+            <div class="mb-3">
+              <label class="form-label">Custom Headers</label>
+              <div id="editHeadersContainer"></div>
+              <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="editAddHeaderBtn">
+                <i class="bi bi-plus"></i> Add Header
+              </button>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="saveWebhookBtn">Save Changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // DOM Elements
+    const webhookForm = document.getElementById('webhookForm');
+    const webhookName = document.getElementById('webhookName');
+    const webhookUrl = document.getElementById('webhookUrl');
+    const headersContainer = document.getElementById('headersContainer');
+    const addHeaderBtn = document.getElementById('addHeaderBtn');
+    const testUrlBtn = document.getElementById('testUrlBtn');
+    const urlTestResult = document.getElementById('urlTestResult');
+    const webhooksList = document.getElementById('webhooksList');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const noWebhooksMessage = document.getElementById('noWebhooksMessage');
+    const refreshWebhooksBtn = document.getElementById('refreshWebhooksBtn');
+    
+    // Edit Modal Elements
+    const editWebhookModal = new bootstrap.Modal(document.getElementById('editWebhookModal'));
+    const editWebhookId = document.getElementById('editWebhookId');
+    const editWebhookName = document.getElementById('editWebhookName');
+    const editWebhookUrl = document.getElementById('editWebhookUrl');
+    const editHeadersContainer = document.getElementById('editHeadersContainer');
+    const editAddHeaderBtn = document.getElementById('editAddHeaderBtn');
+    const saveWebhookBtn = document.getElementById('saveWebhookBtn');
+    
+    // Load webhooks on page load
+    document.addEventListener('DOMContentLoaded', loadWebhooks);
+    
+    // Add event listeners
+    webhookForm.addEventListener('submit', createWebhook);
+    addHeaderBtn.addEventListener('click', addHeaderRow);
+    testUrlBtn.addEventListener('click', testWebhookUrl);
+    refreshWebhooksBtn.addEventListener('click', loadWebhooks);
+    editAddHeaderBtn.addEventListener('click', addEditHeaderRow);
+    saveWebhookBtn.addEventListener('click', saveWebhookChanges);
+    
+    // Add first row to headers container if empty
+    if (headersContainer.children.length === 0) {
+      addHeaderRow();
+    }
+    
+    // Add a new header input row
+    function addHeaderRow() {
+      const headerRow = document.createElement('div');
+      headerRow.className = 'd-flex gap-2 mb-2 header-row';
+      headerRow.innerHTML = `
+        <input type="text" class="form-control header-key" placeholder="Header Name">
+        <input type="text" class="form-control header-value" placeholder="Value">
+        <button type="button" class="btn btn-outline-danger remove-header">
+          <i class="bi bi-trash"></i>
+        </button>
+      `;
+      
+      headerRow.querySelector('.remove-header').addEventListener('click', function() {
+        headerRow.remove();
+      });
+      
+      headersContainer.appendChild(headerRow);
+    }
+    
+    // Add a new header input row for edit modal
+    function addEditHeaderRow() {
+      const headerRow = document.createElement('div');
+      headerRow.className = 'd-flex gap-2 mb-2 edit-header-row';
+      headerRow.innerHTML = `
+        <input type="text" class="form-control edit-header-key" placeholder="Header Name">
+        <input type="text" class="form-control edit-header-value" placeholder="Value">
+        <button type="button" class="btn btn-outline-danger remove-edit-header">
+          <i class="bi bi-trash"></i>
+        </button>
+      `;
+      
+      headerRow.querySelector('.remove-edit-header').addEventListener('click', function() {
+        headerRow.remove();
+      });
+      
+      editHeadersContainer.appendChild(headerRow);
+    }
+    
+    // Test webhook URL
+    async function testWebhookUrl() {
+      const url = webhookUrl.value;
+      
+      if (!url) {
+        urlTestResult.innerHTML = `
+          <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle"></i> Please enter a URL to test
+          </div>
+        `;
+        return;
+      }
+      
+      urlTestResult.innerHTML = `
+        <div class="spinner-border spinner-border-sm text-primary" role="status">
+          <span class="visually-hidden">Testing...</span>
+        </div>
+        <span class="ms-2">Testing connection...</span>
+      `;
+      
+      try {
+        const response = await fetch('/api/webhooks/test', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ url })
+        });
+        
+        const data = await response.json();
+        
+        if (data.valid) {
+          urlTestResult.innerHTML = `
+            <div class="alert alert-success">
+              <i class="bi bi-check-circle"></i> Connection successful
+            </div>
+          `;
+        } else {
+          urlTestResult.innerHTML = `
+            <div class="alert alert-danger">
+              <i class="bi bi-x-circle"></i> Connection failed
+            </div>
+          `;
+        }
+      } catch (error) {
+        urlTestResult.innerHTML = `
+          <div class="alert alert-danger">
+            <i class="bi bi-x-circle"></i> Error testing URL: ${error.message}
+          </div>
+        `;
+      }
+    }
+    
+    // Create a new webhook
+    async function createWebhook(event) {
+      event.preventDefault();
+      
+      // Get form values
+      const name = webhookName.value;
+      const url = webhookUrl.value;
+      
+      // Get selected events
+      const events = [];
+      if (document.getElementById('messageEvent').checked) events.push('message');
+      if (document.getElementById('connectionEvent').checked) events.push('connection');
+      if (document.getElementById('automationEvent').checked) events.push('automation');
+      if (document.getElementById('systemEvent').checked) events.push('system');
+      
+      if (events.length === 0) {
+        alert('Please select at least one event type');
+        return;
+      }
+      
+      // Get headers
+      const headers = {};
+      document.querySelectorAll('.header-row').forEach(row => {
+        const key = row.querySelector('.header-key').value.trim();
+        const value = row.querySelector('.header-value').value.trim();
+        
+        if (key) {
+          headers[key] = value;
+        }
+      });
+      
+      try {
+        const response = await fetch('/api/webhooks', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            name,
+            url,
+            events,
+            headers: Object.keys(headers).length > 0 ? headers : undefined
+          })
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+        
+        // Reset form
+        webhookForm.reset();
+        
+        // Clear headers except first row
+        const headerRows = document.querySelectorAll('.header-row');
+        if (headerRows.length > 1) {
+          for (let i = 1; i < headerRows.length; i++) {
+            headerRows[i].remove();
+          }
+        }
+        
+        // Clear first row values
+        const firstRow = document.querySelector('.header-row');
+        if (firstRow) {
+          firstRow.querySelector('.header-key').value = '';
+          firstRow.querySelector('.header-value').value = '';
+        }
+        
+        // Clear test result
+        urlTestResult.innerHTML = '';
+        
+        // Reload webhooks list
+        loadWebhooks();
+        
+      } catch (error) {
+        alert(`Failed to create webhook: ${error.message}`);
+      }
+    }
+    
+    // Load all webhooks
+    async function loadWebhooks() {
+      loadingIndicator.classList.remove('d-none');
+      webhooksList.innerHTML = '';
+      noWebhooksMessage.classList.add('d-none');
+      
+      try {
+        const response = await fetch('/api/webhooks');
+        const webhooks = await response.json();
+        
+        loadingIndicator.classList.add('d-none');
+        
+        if (webhooks.length === 0) {
+          noWebhooksMessage.classList.remove('d-none');
+          return;
+        }
+        
+        // Render webhooks
+        webhooks.forEach(webhook => {
+          const webhookCard = document.createElement('div');
+          webhookCard.className = 'card mb-3';
+          webhookCard.dataset.id = webhook.id;
+          
+          webhookCard.innerHTML = `
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <div>
+                <h6 class="mb-0">${webhook.name}</h6>
+                <small class="text-muted">${webhook.url}</small>
+              </div>
+              <div class="form-check form-switch">
+                <input class="form-check-input webhook-toggle" type="checkbox" role="switch" 
+                  id="toggle-${webhook.id}" ${webhook.enabled ? 'checked' : ''}>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="mb-2">
+                <strong>Events:</strong>
+                ${webhook.events.map(event => `<span class="badge bg-primary me-1">${event}</span>`).join('')}
+              </div>
+              ${webhook.headers && Object.keys(webhook.headers).length > 0 ? `
+                <div class="mb-2">
+                  <strong>Headers:</strong>
+                  <ul class="list-unstyled mb-0">
+                    ${Object.entries(webhook.headers).map(([key, value]) => 
+                      `<li><small>${key}: ${value}</small></li>`).join('')}
+                  </ul>
+                </div>
+              ` : ''}
+              <div class="d-flex justify-content-end gap-2 mt-2">
+                <button class="btn btn-sm btn-outline-primary edit-webhook" data-id="${webhook.id}">
+                  <i class="bi bi-pencil"></i> Edit
+                </button>
+                <button class="btn btn-sm btn-outline-danger delete-webhook" data-id="${webhook.id}">
+                  <i class="bi bi-trash"></i> Delete
+                </button>
+              </div>
+            </div>
+          `;
+          
+          webhooksList.appendChild(webhookCard);
+          
+          // Add event listeners
+          const toggleSwitch = webhookCard.querySelector('.webhook-toggle');
+          toggleSwitch.addEventListener('change', () => toggleWebhook(webhook.id, toggleSwitch.checked));
+          
+          const editBtn = webhookCard.querySelector('.edit-webhook');
+          editBtn.addEventListener('click', () => openEditModal(webhook));
+          
+          const deleteBtn = webhookCard.querySelector('.delete-webhook');
+          deleteBtn.addEventListener('click', () => deleteWebhook(webhook.id));
+        });
+      } catch (error) {
+        loadingIndicator.classList.add('d-none');
+        alert(`Failed to load webhooks: ${error.message}`);
+      }
+    }
+    
+    // Toggle webhook enabled state
+    async function toggleWebhook(id, enabled) {
+      try {
+        const url = `/api/webhooks/${id}/${enabled ? 'enable' : 'disable'}`;
+        const response = await fetch(url, { method: 'POST' });
+        
+        if (!response.ok) {
+          throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+      } catch (error) {
+        alert(`Failed to ${enabled ? 'enable' : 'disable'} webhook: ${error.message}`);
+        // Reset the toggle
+        const toggle = document.getElementById(`toggle-${id}`);
+        if (toggle) {
+          toggle.checked = !enabled;
+        }
+      }
+    }
+    
+    // Delete a webhook
+    async function deleteWebhook(id) {
+      if (!confirm('Are you sure you want to delete this webhook?')) {
+        return;
+      }
+      
+      try {
+        const response = await fetch(`/api/webhooks/${id}`, {
+          method: 'DELETE'
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+        
+        // Remove from UI
+        const webhookCard = document.querySelector(`.card[data-id="${id}"]`);
+        if (webhookCard) {
+          webhookCard.remove();
+        }
+        
+        // Show no webhooks message if none left
+        if (webhooksList.children.length === 0) {
+          noWebhooksMessage.classList.remove('d-none');
+        }
+      } catch (error) {
+        alert(`Failed to delete webhook: ${error.message}`);
+      }
+    }
+    
+    // Open edit modal with webhook data
+    function openEditModal(webhook) {
+      editWebhookId.value = webhook.id;
+      editWebhookName.value = webhook.name;
+      editWebhookUrl.value = webhook.url;
+      
+      // Set event checkboxes
+      document.getElementById('editMessageEvent').checked = webhook.events.includes('message');
+      document.getElementById('editConnectionEvent').checked = webhook.events.includes('connection');
+      document.getElementById('editAutomationEvent').checked = webhook.events.includes('automation');
+      document.getElementById('editSystemEvent').checked = webhook.events.includes('system');
+      
+      // Clear and populate headers
+      editHeadersContainer.innerHTML = '';
+      
+      if (webhook.headers && Object.keys(webhook.headers).length > 0) {
+        Object.entries(webhook.headers).forEach(([key, value]) => {
+          const headerRow = document.createElement('div');
+          headerRow.className = 'd-flex gap-2 mb-2 edit-header-row';
+          headerRow.innerHTML = `
+            <input type="text" class="form-control edit-header-key" placeholder="Header Name" value="${key}">
+            <input type="text" class="form-control edit-header-value" placeholder="Value" value="${value}">
+            <button type="button" class="btn btn-outline-danger remove-edit-header">
+              <i class="bi bi-trash"></i>
+            </button>
+          `;
+          
+          headerRow.querySelector('.remove-edit-header').addEventListener('click', function() {
+            headerRow.remove();
+          });
+          
+          editHeadersContainer.appendChild(headerRow);
+        });
+      } else {
+        addEditHeaderRow();
+      }
+      
+      editWebhookModal.show();
+    }
+    
+    // Save webhook changes
+    async function saveWebhookChanges() {
+      const id = editWebhookId.value;
+      const name = editWebhookName.value;
+      const url = editWebhookUrl.value;
+      
+      // Get selected events
+      const events = [];
+      if (document.getElementById('editMessageEvent').checked) events.push('message');
+      if (document.getElementById('editConnectionEvent').checked) events.push('connection');
+      if (document.getElementById('editAutomationEvent').checked) events.push('automation');
+      if (document.getElementById('editSystemEvent').checked) events.push('system');
+      
+      if (events.length === 0) {
+        alert('Please select at least one event type');
+        return;
+      }
+      
+      // Get headers
+      const headers = {};
+      document.querySelectorAll('.edit-header-row').forEach(row => {
+        const key = row.querySelector('.edit-header-key').value.trim();
+        const value = row.querySelector('.edit-header-value').value.trim();
+        
+        if (key) {
+          headers[key] = value;
+        }
+      });
+      
+      try {
+        const response = await fetch(`/api/webhooks/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            name,
+            url,
+            events,
+            headers: Object.keys(headers).length > 0 ? headers : undefined
+          })
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+        
+        // Close modal and reload webhooks
+        editWebhookModal.hide();
+        loadWebhooks();
+        
+      } catch (error) {
+        alert(`Failed to update webhook: ${error.message}`);
+      }
+    }
+  </script>
+</body>
+</html> 

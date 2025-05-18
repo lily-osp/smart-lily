@@ -1,0 +1,409 @@
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #f5f5f5;
+}
+
+/* Material Design Card Styles */
+.card {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.shadow-sm {
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24) !important;
+}
+
+.card-header {
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    border-bottom: none;
+    padding: 0.75rem 1.25rem;
+}
+
+.card-header:first-child {
+    border-radius: 8px 8px 0 0;
+}
+
+.card-body {
+    padding: 1rem;
+}
+
+/* Navbar custom style */
+.navbar {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Button styles */
+.btn {
+    border-radius: 4px;
+    text-transform: none;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    transition: all 0.2s;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+/* Form styles */
+.form-control {
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    padding: 0.5rem 0.75rem;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Badge styles */
+.badge {
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    padding: 0.35em 0.65em;
+}
+
+/* History log styles */
+.history-log {
+    max-height: 200px;
+    overflow-y: auto;
+    font-size: 0.8rem;
+}
+
+.history-item {
+    padding: 5px 0;
+    border-bottom: 1px dashed #eee;
+    font-size: 0.8rem;
+}
+
+.history-timestamp {
+    float: right;
+    color: #6c757d;
+    font-size: 0.75rem;
+}
+
+/* Message List Styles */
+.message-container {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.message-list {
+    padding: 0;
+}
+
+.message-item {
+    padding: 10px;
+    border-bottom: 1px solid #f0f0f0;
+    word-break: break-word;
+}
+
+.message-item:last-child {
+    border-bottom: none;
+}
+
+.message-item:hover {
+    background-color: #f9f9f9;
+}
+
+.message-topic {
+    font-weight: 500;
+    color: #007bff;
+    margin-bottom: 5px;
+}
+
+.message-content {
+    font-family: 'Consolas', monospace;
+    font-size: 0.85rem;
+    white-space: pre-wrap;
+}
+
+.message-time {
+    float: right;
+    font-size: 0.75rem;
+    color: #6c757d;
+}
+
+.message-system {
+    background-color: #e7f5ff;
+}
+
+.message-error {
+    background-color: #fff5f5;
+}
+
+/* Client and Topic List styles */
+#client-list, #topic-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.list-group-item {
+    border: none;
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+    padding: 0.75rem 1.25rem;
+    transition: background-color 0.15s ease-in-out;
+}
+
+.list-group-item:last-child {
+    border-bottom: none;
+}
+
+.list-group-item:hover {
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+/* Animation */
+.fade-in {
+    animation: fadeIn 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Topic badge styles */
+.topic-badge {
+    background-color: #6c757d;
+    color: white;
+    border-radius: 16px;
+    padding: 2px 8px;
+    font-size: 0.8rem;
+    margin-right: 5px;
+    display: inline-block;
+    margin-bottom: 3px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+}
+
+/* Status badge animations */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.status-disconnected {
+    animation: pulse 2s infinite;
+}
+
+.status-connecting {
+    animation: blink 1s infinite;
+}
+
+/* Toast notifications */
+.toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1050;
+}
+
+.toast {
+    min-width: 250px;
+}
+
+/* System topics card styles */
+#system-topic-cards .card, 
+#dynamic-topic-cards .card {
+    transition: all 0.3s cubic-bezier(.25,.8,.25,1);
+}
+
+#system-topic-cards .card:hover,
+#dynamic-topic-cards .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+}
+
+.text-truncate {
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+}
+
+/* Dynamic Topic Cards */
+.dynamic-topic-card {
+    margin-bottom: 20px;
+}
+
+.dynamic-topic-card .card-header {
+    background-color: #6c757d;
+}
+
+.dynamic-topic-card[data-topic-type="sensor"] .card-header {
+    background-color: #28a745;
+}
+
+.dynamic-topic-card[data-topic-type="device"] .card-header {
+    background-color: #fd7e14;
+}
+
+.dynamic-topic-card[data-topic-type="control"] .card-header {
+    background-color: #dc3545;
+}
+
+.dynamic-topic-card[data-topic-type="status"] .card-header {
+    background-color: #007bff;
+}
+
+.dynamic-topic-card .topic-content {
+    min-height: 80px;
+}
+
+/* Network styles */
+#system-network .network-interface {
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+
+#system-network .network-interface:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+/* System card specific styles */
+#system-weather .weather-icon {
+    width: 50px;
+    height: 50px;
+}
+
+#system-weather .weather-temp {
+    font-size: 1.5rem;
+    font-weight: 500;
+}
+
+#system-news .news-item {
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+
+#system-news .news-item:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+#system-crypto .crypto-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+
+#system-crypto .crypto-item:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.crypto-change-positive {
+    color: #28a745;
+}
+
+.crypto-change-negative {
+    color: #dc3545;
+}
+
+/* Client & Topic List */
+.client-item, .topic-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Make sure template is hidden */
+template {
+    display: none;
+}
+
+/* Improved visibility for dynamic cards */
+#dynamic-topic-cards {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0 -10px;
+}
+
+#dynamic-topic-cards .col-md-4 {
+    padding: 0 10px;
+}
+
+/* Debug helper styles */
+.debug-outline {
+    outline: 2px solid red;
+}
+
+/* Fix for scrollable areas */
+.scrollable {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* Code Examples Page Styles */
+.code-container {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.copy-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: rgba(255, 255, 255, 0.2);
+    border: none;
+    border-radius: 4px;
+    padding: 5px 10px;
+    color: white;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    z-index: 10;
+}
+
+.copy-btn:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+.code-section {
+    scroll-margin-top: 70px;
+}
+
+pre {
+    border-radius: 8px;
+    margin-bottom: 20px;
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+pre code {
+    padding: 1rem !important;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.table th {
+    background-color: #f8f9fa;
+} 
