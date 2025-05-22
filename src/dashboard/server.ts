@@ -11,6 +11,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { WebhookService, WebhookConfig } from '../utils/webhook';
 import { initializeDatabase, MessageHistoryRepository, AutomationRuleRepository } from '../utils/database';
 import 'reflect-metadata';
+import mqtt from 'mqtt';
 
 export class DashboardServer {
   private app: express.Application;
@@ -23,8 +24,9 @@ export class DashboardServer {
   private webhookService!: WebhookService;
   
   // Track connected clients and active topics
-  private connectedClients: string[] = [];
-  private activeTopics: Map<string, { count: number, lastMessage: any }> = new Map();
+  private connectedClients: Map<string, any> = new Map();
+  private activeTopics: Map<string, { count: number, lastMessage: any, subscribers?: Set<string> }> = new Map();
+  private uiWatchedTopics: Set<string> = new Set<string>(); // New: Topics UI is actively watching
   
   // Stats
   private messageCount: number = 0;
@@ -170,11 +172,11 @@ export class DashboardServer {
     this.app.get('/api/stats', (req: Request, res: Response) => {
       res.json({
         uptime: Math.floor((Date.now() - this.startTime) / 1000),
-        connectedClients: this.connectedClients.length,
+        connectedClients: this.connectedClients.size,
         messageCount: this.messageCount,
         activeTopics: Array.from(this.activeTopics.entries()).map(([topic, data]) => ({
           topic,
-          subscribers: data.count,
+          subscribers: data.subscribers ? data.subscribers.size : 0,
           lastMessage: data.lastMessage
         }))
       });
@@ -184,12 +186,17 @@ export class DashboardServer {
     this.app.get('/api/topics', (req: Request, res: Response) => {
       const topics = Array.from(this.activeTopics.entries()).map(([topic, data]) => ({
         topic,
-        subscribers: data.count,
+        subscribers: data.subscribers ? data.subscribers.size : 0,
         lastMessage: data.lastMessage,
         lastUpdate: new Date().toISOString()
       }));
       
       res.json(topics);
+    });
+    
+    // API route to get connected clients
+    this.app.get('/api/clients', (req: Request, res: Response) => {
+      res.json(Array.from(this.connectedClients.values()));
     });
     
     // API route to get a specific topic
@@ -204,7 +211,7 @@ export class DashboardServer {
       
       res.json({
         topic,
-        subscribers: topicData.count,
+        subscribers: topicData.subscribers ? topicData.subscribers.size : 0,
         lastMessage: topicData.lastMessage,
         lastUpdate: new Date().toISOString()
       });
@@ -607,64 +614,62 @@ export class DashboardServer {
 
   private setupSocketEvents() {
     this.io.on('connection', (socket) => {
-      logger.info(`Dashboard client connected: ${socket.id}`);
-      
-      // Debug: Log all connected sockets
-      const connectedSockets = Array.from(this.io.sockets.sockets).map(s => s[0]);
-      logger.info(`Currently connected sockets: ${connectedSockets.length} - ${connectedSockets.join(', ')}`);
-      
-      // Debug: enhance the emit method to log all events
-      const originalEmit = socket.emit;
-      socket.emit = function(event: string, ...args: any[]) {
-        try {
-          logger.debug(`[Socket ${socket.id}] Emitting event "${event}" with data: ${
-            args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : arg).join(', ')
-          }`);
-        } catch (error) {
-          logger.debug(`[Socket ${socket.id}] Emitting event "${event}" (failed to stringify data)`);
-        }
-        return originalEmit.apply(this, [event, ...args]);
-      };
-      
-      // Handle client publishing message
-      socket.on('publish', async (data: { topic: string, message: string, retain?: boolean }) => {
-        try {
-          logger.info(`[Socket ${socket.id}] Received publish request for topic: ${data.topic}`);
-          logger.debug(`[Socket ${socket.id}] Publish data: ${JSON.stringify(data)}`);
-          
-          await this.mqttClient.publish(data.topic, data.message, { 
-            retain: data.retain || false 
-          });
-          logger.info(`Message published to ${data.topic} from dashboard`);
-          socket.emit('publish_success', { topic: data.topic });
-        } catch (error) {
-          if (error instanceof Error) {
-            logger.error(`Failed to publish: ${error.message}`);
-            socket.emit('publish_error', { error: error.message });
-          }
-        }
+      logger.info(`Socket.IO client connected: ${socket.id}`);
+
+      // Send initial state to the newly connected client
+      socket.emit('initial_state', {
+        clients: Array.from(this.connectedClients.values()),
+        topics: Array.from(this.activeTopics.entries()).map(([topicName, tData]) => this.getPublicTopicData(topicName, tData)),
+        stats: this.getStatsPayload(),
+        watchedTopics: Array.from(this.uiWatchedTopics)
+      });
+
+      socket.on('disconnect', () => {
+        logger.info(`Socket.IO client disconnected: ${socket.id}`);
+      });
+
+      socket.on('ui_watch_topic', (topic: string) => {
+        logger.info(`Socket.IO client ${socket.id} started watching topic: ${topic}`);
+        this.uiWatchedTopics.add(topic);
+        socket.emit('watched_topics_update', Array.from(this.uiWatchedTopics)); // Confirm update to client
+      });
+
+      socket.on('ui_unwatch_topic', (topic: string) => {
+        logger.info(`Socket.IO client ${socket.id} stopped watching topic: ${topic}`);
+        this.uiWatchedTopics.delete(topic);
+        socket.emit('watched_topics_update', Array.from(this.uiWatchedTopics)); // Confirm update to client
       });
       
-      // Handle client subscribing to topic
-      socket.on('subscribe', async (data: { topic: string }) => {
+      socket.on('publish_message', (data: { topic: string, payload: string, retain?: boolean, qos?: number }) => {
+        if (!this.mqttClient || !this.mqttClient.getClient().connected) {
+          logger.warn('Cannot publish, dashboard MqttClient not connected.');
+          socket.emit('publish_error', 'MQTT client not connected.');
+          return;
+        }
         try {
-          logger.info(`[Socket ${socket.id}] Received subscribe request for topic: ${data.topic}`);
+          const opts: mqtt.IClientPublishOptions = {};
+          if (data.retain !== undefined) opts.retain = data.retain;
+          if (data.qos !== undefined) opts.qos = data.qos as (0 | 1 | 2);
           
-          await this.mqttClient.subscribe(data.topic);
-          logger.info(`Subscribed to ${data.topic} from dashboard`);
-          socket.emit('subscribe_success', { topic: data.topic });
+          this.mqttClient.publish(data.topic, data.payload, opts)
+            .then(() => {
+              logger.info(`Dashboard published message to ${data.topic}`);
+              socket.emit('publish_success', { topic: data.topic });
+            })
+            .catch(err => {
+              logger.error(`Dashboard failed to publish message: ${err.message}`);
+              socket.emit('publish_error', err.message);
+            });
         } catch (error) {
-          if (error instanceof Error) {
-            logger.error(`Failed to subscribe: ${error.message}`);
-            socket.emit('subscribe_error', { error: error.message });
-          }
+          logger.error(`Error publishing message from dashboard: ${error instanceof Error ? error.message : String(error)}`);
+          socket.emit('publish_error', error instanceof Error ? error.message : String(error));
         }
       });
 
-      // Handle client disconnection
-      socket.on('disconnect', () => {
-        logger.info(`Dashboard client disconnected: ${socket.id}`);
-      });
+      // Existing automation and other socket event handlers should be preserved here
+      // For example, if there were listeners for automation rules:
+      // socket.on('get_automation_rules', () => { /* ... */ });
+      // socket.on('save_automation_rule', (rule) => { /* ... */ });
     });
   }
 
@@ -694,126 +699,169 @@ export class DashboardServer {
   }
 
   private setupMqttServerEvents() {
-    if (!this.mqttServer) return;
-    
+    if (!this.mqttServer) {
+      logger.warn('MqttServer instance not provided to DashboardServer, MQTT server events will not be handled directly.');
+      return;
+    }
     logger.info('Setting up MQTT server event handlers');
-    
+
     // Client connected event
-    this.mqttServer.on('client_connected', (data: { clientId: string }) => {
-      logger.info(`MQTT client connected: ${data.clientId}`);
+    this.mqttServer.on('client_connected', (clientDetails: { clientId: string, protocol: string, address: string, connectedAt: string }) => {
+      logger.info(`Dashboard: MQTT Client connected via MqttServer: ${clientDetails.clientId}`);
+      this.connectedClients.set(clientDetails.clientId, { ...clientDetails, subscriptions: new Set<string>() });
       
-      // Add to connected clients list if not already there
-      if (!this.connectedClients.includes(data.clientId)) {
-        this.connectedClients.push(data.clientId);
-        logger.debug(`Added client to list: ${data.clientId}, total clients: ${this.connectedClients.length}`);
-      }
-      
-      // Forward to Socket.IO clients
-      logger.debug(`Broadcasting client_connected event for ${data.clientId} to all Socket.IO clients`);
-      this.io.emit('client_connected', data);
-      
-      // Trigger webhook event for connection
+      this.io.emit('client_update', { type: 'connect', client: this.connectedClients.get(clientDetails.clientId) });
+      this.io.emit('stats_update', this.getStatsPayload());
+
       this.webhookService.triggerEvent('connection', {
-        clientId: data.clientId,
-        timestamp: new Date().toISOString()
+        clientId: clientDetails.clientId,
+        address: clientDetails.address,
+        protocol: clientDetails.protocol,
+        timestamp: clientDetails.connectedAt
       }).catch(err => {
         logger.warn(`Failed to trigger connection webhook: ${err.message}`);
       });
     });
-    
+
     // Client disconnected event
-    this.mqttServer.on('client_disconnected', (data: { clientId: string }) => {
-      logger.info(`MQTT client disconnected: ${data.clientId}`);
+    this.mqttServer.on('client_disconnected', (data: { clientId: string, disconnectedAt: string }) => {
+      logger.info(`Dashboard: MQTT Client disconnected via MqttServer: ${data.clientId}`);
+      const clientDetails = this.connectedClients.get(data.clientId);
+      this.connectedClients.delete(data.clientId);
+
+      // Update topic subscriber counts
+      if (clientDetails && clientDetails.subscriptions) {
+        clientDetails.subscriptions.forEach((topic: string) => {
+          const topicData = this.activeTopics.get(topic);
+          if (topicData && topicData.subscribers) {
+            topicData.subscribers.delete(data.clientId);
+            if (topicData.subscribers.size === 0) {
+              // Optionally remove topic from activeTopics if no subscribers and no recent messages
+              // Or mark as inactive
+            }
+            this.io.emit('topic_update', { topic, data: this.getPublicTopicData(topic, topicData) });
+          }
+        });
+      }
       
-      // Remove from connected clients list
-      this.connectedClients = this.connectedClients.filter(id => id !== data.clientId);
-      logger.debug(`Removed client from list: ${data.clientId}, total clients: ${this.connectedClients.length}`);
-      
-      // Forward to Socket.IO clients
-      logger.debug(`Broadcasting client_disconnected event for ${data.clientId} to all Socket.IO clients`);
-      this.io.emit('client_disconnected', data);
-      
-      // Trigger webhook event for disconnection
+      this.io.emit('client_update', { type: 'disconnect', clientId: data.clientId, disconnectedAt: data.disconnectedAt });
+      this.io.emit('stats_update', this.getStatsPayload());
+
       this.webhookService.triggerEvent('disconnection', {
         clientId: data.clientId,
-        timestamp: new Date().toISOString()
+        timestamp: data.disconnectedAt
       }).catch(err => {
         logger.warn(`Failed to trigger disconnection webhook: ${err.message}`);
       });
     });
-    
-    // Message event from MQTT server
-    this.mqttServer.on('message', async (data: { topic: string, payload: string, qos: number, retain: boolean, clientId: string, timestamp: string }) => {
-      // Update message count
+
+    // Message event from MQTT server (for messages published *through* this broker)
+    this.mqttServer.on('message', async (message: { topic: string, payload: Buffer | string, qos: number, retain: boolean, clientId: string, timestamp: string }) => {
+      logger.debug(`Dashboard: MqttServer received message on ${message.topic} from ${message.clientId}`);
       this.messageCount++;
       
+      let parsedPayload: any;
+      const rawPayload = message.payload.toString();
       try {
-        // Try to parse message as JSON
-        let parsedMessage;
-        try {
-          parsedMessage = JSON.parse(data.payload);
-          logger.debug(`Successfully parsed message as JSON: ${JSON.stringify(parsedMessage)}`);
-        } catch (e) {
-          parsedMessage = data.payload;
-          logger.debug(`Message is not JSON: ${data.payload}`);
-        }
-        
-        // Update active topics map
-        if (!this.activeTopics.has(data.topic)) {
-          this.activeTopics.set(data.topic, { count: 0, lastMessage: parsedMessage });
-          logger.info(`New topic discovered: ${data.topic}, total topics: ${this.activeTopics.size}`);
-        } else {
-          const topicData = this.activeTopics.get(data.topic)!;
-          topicData.lastMessage = parsedMessage;
-          this.activeTopics.set(data.topic, topicData);
-          logger.debug(`Updated existing topic: ${data.topic}`);
-        }
-        
-        const messageData = {
-          topic: data.topic,
-          payload: parsedMessage,
-          timestamp: data.timestamp,
-          retain: data.retain,
-          qos: data.qos
-        };
+        parsedPayload = JSON.parse(rawPayload);
+      } catch (e) {
+        parsedPayload = rawPayload;
+      }
 
-        // Debug log connected sockets
-        const connectedSockets = Array.from(this.io.sockets.sockets).map(s => s[0]);
-        logger.debug(`Broadcasting mqtt-message to ${connectedSockets.length} sockets: ${connectedSockets.join(', ')}`);
+      const topicData = this.activeTopics.get(message.topic) || { count: 0, lastMessage: null, subscribers: new Set<string>() };
+      topicData.lastMessage = parsedPayload;
+      // topicData.count might be used for message count per topic, or number of subscribers.
+      // If it's for subscribers, it should be updated in 'subscribe' event. Let's assume 'subscribers' set is for that.
+      this.activeTopics.set(message.topic, topicData);
 
-        // Emit message event to Socket.IO clients
-        this.io.emit('mqtt-message', messageData);
-        
-        // Log for debugging
-        logger.info(`Emitting mqtt-message event for ${data.topic}`);
-        logger.debug(`Message payload type: ${typeof messageData.payload}`);
-        logger.debug(`Message payload: ${typeof messageData.payload === 'object' ? JSON.stringify(messageData.payload) : messageData.payload}`);
-        
-        // Save message to database for history
-        try {
-          await MessageHistoryRepository.saveMessage(data.topic, data.payload, {
-            retain: data.retain,
-            qos: data.qos
-          });
-        } catch (dbError) {
-          logger.warn(`Failed to save message to database: ${dbError instanceof Error ? dbError.message : 'Unknown error'}`);
-          // Continue even if database save fails
-        }
-        
-        // Trigger webhook events for this topic
-        try {
-          await this.webhookService.triggerEvent('message', messageData);
-        } catch (webhookError) {
-          logger.warn(`Failed to trigger webhook: ${webhookError instanceof Error ? webhookError.message : 'Unknown error'}`);
-          // Continue even if webhook trigger fails
-        }
-        
-      } catch (error) {
-        if (error instanceof Error) {
-          logger.error(`Error processing MQTT message from server: ${error.message}`);
-        }
+      const fullMessageData = {
+        ...message,
+        payload: parsedPayload, // Send parsed payload
+        timestamp: message.timestamp || new Date().toISOString() // Ensure timestamp
+      };
+      
+      this.io.emit('mqtt_message', fullMessageData);
+      this.io.emit('topic_update', { topic: message.topic, data: this.getPublicTopicData(message.topic, topicData) });
+      this.io.emit('stats_update', this.getStatsPayload());
+
+      try {
+        await MessageHistoryRepository.saveMessage(message.topic, rawPayload, { // Save raw payload
+          retain: message.retain,
+          qos: message.qos,
+        });
+      } catch (dbError) {
+        logger.warn(`Failed to save MqttServer message to database: ${dbError instanceof Error ? dbError.message : 'Unknown error'}`);
+      }
+
+      try {
+        await this.webhookService.triggerEvent('message', fullMessageData);
+      } catch (webhookError) {
+        logger.warn(`Failed to trigger MqttServer message webhook: ${webhookError instanceof Error ? webhookError.message : 'Unknown error'}`);
       }
     });
+    
+    // Subscribed event
+    this.mqttServer.on('client_subscribe', (data: { clientId: string, topics: string[] }) => {
+      logger.info(`Dashboard: Client ${data.clientId} subscribed via MqttServer to ${data.topics.join(', ')}`);
+      const clientDetails = this.connectedClients.get(data.clientId);
+      if (clientDetails) {
+        data.topics.forEach(topic => {
+          clientDetails.subscriptions.add(topic);
+          const topicData = this.activeTopics.get(topic) || { count: 0, lastMessage: null, subscribers: new Set<string>() };
+          topicData.subscribers!.add(data.clientId);
+          this.activeTopics.set(topic, topicData);
+          this.io.emit('topic_update', { topic, data: this.getPublicTopicData(topic, topicData) });
+        });
+        this.connectedClients.set(data.clientId, clientDetails); // Re-set to update
+        this.io.emit('client_update', { type: 'subscribe', client: clientDetails }); // Notify UI of subscription changes
+      }
+      this.io.emit('stats_update', this.getStatsPayload());
+    });
+
+    // Unsubscribed event (Aedes emits this as 'unsubscribe')
+    this.mqttServer.on('unsubscribe', (unsubscriptions: any, client: any) => {
+      if (client) {
+        const topics = unsubscriptions.map((s: any) => s.topic);
+        logger.info(`Dashboard: Client ${client.id} unsubscribed via MqttServer from ${topics.join(', ')}`);
+        const clientDetails = this.connectedClients.get(client.id);
+        if (clientDetails) {
+          topics.forEach((topic: string) => {
+            clientDetails.subscriptions.delete(topic);
+            const topicData = this.activeTopics.get(topic);
+            if (topicData && topicData.subscribers) {
+              topicData.subscribers.delete(client.id);
+              if (topicData.subscribers.size === 0) {
+                // Optional: logic if topic becomes inactive
+              }
+              this.io.emit('topic_update', { topic, data: this.getPublicTopicData(topic, topicData) });
+            }
+          });
+          this.connectedClients.set(client.id, clientDetails); // Re-set to update
+          this.io.emit('client_update', { type: 'unsubscribe', client: clientDetails, topics }); // Notify UI
+        }
+        this.io.emit('stats_update', this.getStatsPayload());
+      }
+    });
+  }
+
+  // Helper to get current stats for emission
+  private getStatsPayload() {
+    return {
+      uptime: Math.floor((Date.now() - this.startTime) / 1000),
+      connectedClients: this.connectedClients.size,
+      messageCount: this.messageCount,
+      activeTopicsCount: this.activeTopics.size
+      // activeTopics: Array.from(this.activeTopics.keys()) // Optionally send keys or full topic data
+    };
+  }
+
+  private getPublicTopicData(topic: string, topicData: any) {
+    return {
+      topic,
+      subscribers: topicData.subscribers ? topicData.subscribers.size : 0,
+      lastMessage: topicData.lastMessage,
+      // Add any other relevant fields for the UI like last message timestamp
+    };
   }
 
   private async setupMqttMonitoring() {
@@ -838,65 +886,58 @@ export class DashboardServer {
       
       // Handle incoming messages - only needed if MQTT server integration is not available
       if (!this.mqttServer) {
-        this.mqttClient.getClient().on('message', async (topic, message, packet) => {
-          // Update message count
+        this.mqttClient.getClient().on('message', async (topic: string, payload: Buffer, packet: mqtt.IPublishPacket) => {
+          logger.debug(`Dashboard MqttClient received message on ${topic}`);
           this.messageCount++;
-          
+
+          let parsedPayload: any;
+          const rawPayload = payload.toString();
           try {
-            // Try to parse message as JSON
-            let parsedMessage;
-            try {
-              parsedMessage = JSON.parse(message.toString());
-            } catch (e) {
-              parsedMessage = message.toString();
-            }
-            
-            // Update active topics map
-            if (!this.activeTopics.has(topic)) {
-              this.activeTopics.set(topic, { count: 0, lastMessage: parsedMessage });
-            } else {
-              const topicData = this.activeTopics.get(topic)!;
-              topicData.lastMessage = parsedMessage;
-              this.activeTopics.set(topic, topicData);
-            }
-            
-            const messageData = {
-              topic,
-              payload: parsedMessage,
-              timestamp: new Date().toISOString(),
+            parsedPayload = JSON.parse(rawPayload);
+          } catch (e) {
+            parsedPayload = rawPayload;
+          }
+
+          // Update activeTopics with the latest message, regardless of UI watching
+          // Ensure 'topic' field is correctly populated in activeTopics map entries
+          const currentTopicData = this.activeTopics.get(topic) || { topic: topic, count: 0, lastMessage: null, subscribers: new Set<string>() };
+          currentTopicData.lastMessage = parsedPayload;
+          // currentTopicData.count could be incremented here if it represents messages per topic
+          this.activeTopics.set(topic, currentTopicData);
+
+          const messageData = {
+            topic: topic,
+            payload: parsedPayload,
+            qos: packet.qos,
+            retain: packet.retain,
+            timestamp: new Date().toISOString()
+          };
+
+          // Emit detailed mqtt_message only if topic is being watched by at least one UI client
+          // Or, more simply, if it's in this.uiWatchedTopics (which aggregates all UI desires)
+          if (this.uiWatchedTopics.has(topic) || this.uiWatchedTopics.has('#') || topic.startsWith('$SYS')) { // Also always send $SYS topics
+            this.io.emit('mqtt_message', messageData);
+          }
+          
+          // Always emit topic_update for the global topic list and stats_update
+          this.io.emit('topic_update', { topic, data: this.getPublicTopicData(topic, currentTopicData) });
+          this.io.emit('stats_update', this.getStatsPayload());
+
+          // Save message to database (rawPayload is used here)
+          try {
+            await MessageHistoryRepository.saveMessage(topic, rawPayload, {
               retain: packet.retain,
               qos: packet.qos
-            };
+            });
+          } catch (dbError) {
+            logger.warn(`Failed to save MqttClient message to database: ${dbError instanceof Error ? dbError.message : 'Unknown error'}`);
+          }
 
-            // Emit message event to Socket.IO clients
-            this.io.emit('mqtt-message', messageData);
-            
-            // Log for debugging
-            logger.debug(`Emitting mqtt-message event for ${topic}`);
-            
-            // Save message to database for history
-            try {
-              await MessageHistoryRepository.saveMessage(topic, message.toString(), {
-                retain: packet.retain,
-                qos: packet.qos
-              });
-            } catch (dbError) {
-              logger.warn(`Failed to save message to database: ${dbError instanceof Error ? dbError.message : 'Unknown error'}`);
-              // Continue even if database save fails
-            }
-            
-            // Trigger webhook events for this topic
-            try {
-              await this.webhookService.triggerEvent('message', messageData);
-            } catch (webhookError) {
-              logger.warn(`Failed to trigger webhook: ${webhookError instanceof Error ? webhookError.message : 'Unknown error'}`);
-              // Continue even if webhook trigger fails
-            }
-            
-          } catch (error) {
-            if (error instanceof Error) {
-              logger.error(`Error processing MQTT message: ${error.message}`);
-            }
+          // Trigger webhooks (full messageData with parsedPayload)
+          try {
+            await this.webhookService.triggerEvent('message', messageData);
+          } catch (webhookError) {
+            logger.warn(`Failed to trigger MqttClient message webhook: ${webhookError instanceof Error ? webhookError.message : 'Unknown error'}`);
           }
         });
       }
@@ -907,17 +948,19 @@ export class DashboardServer {
         
         // Add to connected clients list if not using MQTT server events
         if (!this.mqttServer) {
-          if (!this.connectedClients.includes('dashboard-monitor')) {
-            this.connectedClients.push('dashboard-monitor');
+          if (!this.connectedClients.has('dashboard-monitor')) {
+            // Construct a basic client details object for the dashboard monitor itself
+            const dashboardClientDetails = {
+              clientId: 'dashboard-monitor',
+              protocol: 'mqtt', // Assuming internal client uses MQTT
+              address: 'internal',
+              connectedAt: new Date().toISOString(),
+              subscriptions: new Set<string>(['#', '$SYS/#']) // Reflect its subscriptions
+            };
+            this.connectedClients.set('dashboard-monitor', dashboardClientDetails);
             // Update UI
-            this.io.emit('client_connected', { clientId: 'dashboard-monitor' });
-          }
-        }
-        
-        // Add to connected clients list if not using MQTT server events
-        if (!this.mqttServer) {
-          if (!this.connectedClients.includes('dashboard-monitor')) {
-            this.connectedClients.push('dashboard-monitor');
+            this.io.emit('client_update', { type: 'connect', client: dashboardClientDetails});
+            this.io.emit('stats_update', this.getStatsPayload());
           }
         }
         
@@ -978,11 +1021,11 @@ export class DashboardServer {
   private getSystemStats(req: Request, res: Response) {
     res.json({
       uptime: Math.floor((Date.now() - this.startTime) / 1000),
-      connectedClients: this.connectedClients.length,
+      connectedClients: this.connectedClients.size,
       messageCount: this.messageCount,
       activeTopics: Array.from(this.activeTopics.entries()).map(([topic, data]) => ({
         topic,
-        subscribers: data.count,
+        subscribers: data.subscribers ? data.subscribers.size : 0,
         lastMessage: data.lastMessage
       }))
     });

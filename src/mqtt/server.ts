@@ -32,15 +32,21 @@ export class MqttServer extends EventEmitter {
     // Client connected event
     this.broker.on('client', (client: any) => {
       logger.info(`Client connected: ${client.id}`);
+      const clientDetails = {
+        clientId: client.id,
+        protocol: client.conn && client.conn.protocol ? client.conn.protocol : 'unknown', // Check for ws or mqtt
+        address: client.conn && client.conn.remoteAddress ? client.conn.remoteAddress : 'unknown',
+        connectedAt: new Date().toISOString()
+      };
       // Emit event for other components to react to
-      this.emit('client_connected', { clientId: client.id });
+      this.emit('client_connected', clientDetails);
     });
 
     // Client disconnected event
     this.broker.on('clientDisconnect', (client: any) => {
       logger.info(`Client disconnected: ${client.id}`);
       // Emit event for other components to react to
-      this.emit('client_disconnected', { clientId: client.id });
+      this.emit('client_disconnected', { clientId: client.id, disconnectedAt: new Date().toISOString() });
     });
 
     // Published event
