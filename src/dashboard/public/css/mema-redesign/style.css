@@ -1,0 +1,126 @@
+/* Smart Lily - Neo-M3 Hybrid Design System */
+/* Inspired by Wired/Verge style with Material You (M3) softness */
+
+:root {
+    --primary: #FF5252;
+    --primary-container: #FFDAD4;
+    --on-primary: #FFFFFF;
+    --secondary: #775652;
+    --secondary-container: #FFDAD5;
+    --surface: #FCFCFF;
+    --on-surface: #1A1C1E;
+    --outline: #72777F;
+    --surface-variant: #DEE3EB;
+    
+    /* Neo-M3 Specifics */
+    --border-width: 3px;
+    --border-color: #1A1C1E;
+    --card-radius: 24px;
+    --hard-shadow: 6px 6px 0px 0px rgba(26, 28, 30, 1);
+    --hard-shadow-sm: 4px 4px 0px 0px rgba(26, 28, 30, 1);
+}
+
+body {
+    background-color: #F0F2F5;
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    color: var(--on-surface);
+    padding-bottom: 50px;
+}
+
+/* Glassmorphism Utility */
+.glass {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Neo-M3 Cards */
+.neo-card {
+    background: var(--surface);
+    border: var(--border-width) solid var(--border-color);
+    border-radius: var(--card-radius);
+    box-shadow: var(--hard-shadow);
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    overflow: hidden;
+    margin-bottom: 24px;
+}
+
+.neo-card:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 8px 8px 0px 0px rgba(26, 28, 30, 1);
+}
+
+.neo-card-header {
+    padding: 16px 24px;
+    border-bottom: var(--border-width) solid var(--border-color);
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+}
+
+.neo-card-body {
+    padding: 24px;
+}
+
+/* Buttons */
+.neo-btn {
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    padding: 10px 20px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.1s;
+    box-shadow: var(--hard-shadow-sm);
+    position: relative;
+    top: 0;
+    left: 0;
+}
+
+.neo-btn:active {
+    top: 2px;
+    left: 2px;
+    box-shadow: 2px 2px 0px 0px rgba(26, 28, 30, 1);
+}
+
+.neo-btn-primary { background: var(--primary); color: white; }
+.neo-btn-secondary { background: var(--secondary-container); color: var(--secondary); }
+
+/* Stats Widgets */
+.stat-value {
+    font-size: 2.5rem;
+    font-weight: 900;
+    letter-spacing: -2px;
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--outline);
+    margin-top: 4px;
+}
+
+/* Navbar */
+.neo-nav {
+    border-bottom: var(--border-width) solid var(--border-color);
+    background: white;
+    padding: 15px 0;
+}
+
+.nav-logo {
+    font-weight: 900;
+    font-size: 1.5rem;
+    color: var(--border-color);
+    text-decoration: none;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: #f1f1f1; }
+::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 5px; }

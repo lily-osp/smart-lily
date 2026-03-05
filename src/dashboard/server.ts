@@ -48,7 +48,15 @@ export class DashboardServer {
     
     // Fix views path to correctly point to views directory after compilation
     const viewsPath = path.join(__dirname, '..', '..', 'src', 'dashboard', 'views');
-    this.app.set('views', viewsPath);
+    
+    // Check if mema-redesign should be used
+    const useMemaRedesign = process.env.UI_THEME === 'mema-redesign';
+    if (useMemaRedesign) {
+      this.app.set('views', path.join(viewsPath, 'mema-redesign'));
+    } else {
+      this.app.set('views', viewsPath);
+    }
+    
     this.app.set('view engine', 'ejs');
     
     // Create HTTP server
