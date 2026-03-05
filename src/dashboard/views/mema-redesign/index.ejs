@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= title %> | Mema Redesign</title>
-    <!-- Fonts -->
+    <title><%= title %> | Smart Lily</title>
+    <!-- Fonts - Plus Jakarta Sans (Swiss Modern) & JetBrains Mono (M3 Technical) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
@@ -12,47 +12,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <!-- Neo-M3 Custom CSS -->
+    <!-- Redesign CSS: Swiss x M3 Hybrid -->
     <link rel="stylesheet" href="/css/mema-redesign/style.css">
-    <style>
-        .navbar-nav .nav-link {
-            font-weight: 700;
-            color: var(--border-color);
-            padding: 0.5rem 1.5rem;
-            text-transform: uppercase;
-            font-size: 0.8rem;
-            letter-spacing: 0.5px;
-        }
-        .navbar-nav .nav-link.active {
-            background: var(--primary-container);
-            border: 2px solid var(--border-color);
-            border-radius: 12px;
-        }
-        .topic-badge {
-            font-family: 'JetBrains Mono', monospace;
-            background: #e9ecef;
-            border: 1px solid var(--border-color);
-            padding: 2px 8px;
-            border-radius: 6px;
-            font-size: 0.75rem;
-        }
-        .message-feed {
-            height: 400px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column-reverse;
-        }
-        .message-item {
-            border-bottom: 1px dashed #dee2e6;
-            padding: 12px 0;
-        }
-        .message-meta {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 10px;
-            color: var(--outline);
-            margin-bottom: 4px;
-        }
-    </style>
 </head>
 <body>
     <nav class="navbar navbar-expand-lg neo-nav mb-5">
@@ -60,22 +21,16 @@
             <a class="nav-logo" href="/">
                 <i class="fas fa-lily me-2 text-danger"></i>SMART LILY
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
+            <div class="ms-auto d-flex align-items-center">
+                <ul class="navbar-nav flex-row gap-4 d-none d-md-flex">
                     <li class="nav-item">
-                        <a class="nav-link active" href="/"><i class="fas fa-th-large me-2"></i>Hub</a>
+                        <a class="nav-link text-primary" href="/"><i class="fas fa-th-large me-1"></i>HUB</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/topics"><i class="fas fa-microchip me-2"></i>Nodes</a>
+                        <a class="nav-link" href="/topics"><i class="fas fa-microchip me-1"></i>NODES</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/automation"><i class="fas fa-bolt me-2"></i>Flows</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/webhooks"><i class="fas fa-link me-2"></i>Hooks</a>
+                        <a class="nav-link" href="/automation"><i class="fas fa-bolt me-1"></i>FLOWS</a>
                     </li>
                 </ul>
             </div>
@@ -83,151 +38,106 @@
     </nav>
 
     <div class="container">
-        <!-- Dashboard Header -->
-        <div class="row mb-5 align-items-end">
+        <!-- Header - Swiss Layout -->
+        <div class="row mb-5">
             <div class="col-md-8">
-                <h1 class="fw-800 display-5 mb-1">COMMAND CENTER</h1>
-                <p class="text-muted fw-600">Lily-OSP Infrastructure Management System v2.0</p>
+                <h1 class="display-3 mb-0">COMMAND CENTER</h1>
+                <div class="d-flex align-items-center gap-3 mt-3">
+                    <span class="badge bg-dark rounded-pill px-3 py-2 fw-800">VERSION 2.1</span>
+                    <span class="text-secondary fw-800 small">SWISS PRECISION × M3 FLUIDITY</span>
+                </div>
             </div>
-            <div class="col-md-4 text-md-end">
-                <div class="glass p-3 border rounded-4 d-inline-flex align-items-center">
-                    <div class="w-3 h-3 rounded-circle bg-success me-2 pulse"></div>
-                    <span class="fw-800 text-sm">SERVER ONLINE: <%= port %></span>
+            <div class="col-md-4 text-md-end pt-4">
+                <div class="neo-card p-3 d-inline-flex align-items-center" style="border-radius: 40px; margin-bottom: 0;">
+                    <span class="status-dot pulse bg-success me-2" style="width: 12px; height: 12px; border-radius: 50%; display: inline-block;"></span>
+                    <span class="fw-800 small">SERVER ONLINE: <%= port %></span>
                 </div>
             </div>
         </div>
 
-        <!-- Quick Stats Row -->
-        <div class="row mb-4">
+        <!-- Stats Grid - Swiss Bauhaus Minimalism -->
+        <div class="row mb-5">
             <div class="col-md-3">
                 <div class="neo-card p-4">
                     <p class="stat-label">Clients</p>
                     <p class="stat-value" id="client-count">0</p>
-                    <div class="mt-2 text-success small fw-700"><i class="fas fa-arrow-up me-1"></i>Active Now</div>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="neo-card p-4">
                     <p class="stat-label">Topics</p>
                     <p class="stat-value" id="topic-count">0</p>
-                    <div class="mt-2 text-primary small fw-700"><i class="fas fa-network-wired me-1"></i>Namespaces</div>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="neo-card p-4">
                     <p class="stat-label">Messages</p>
                     <p class="stat-value" id="message-count">0</p>
-                    <div class="mt-2 text-info small fw-700"><i class="fas fa-exchange-alt me-1"></i>Total Flow</div>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="neo-card p-4">
                     <p class="stat-label">Uptime</p>
-                    <p class="stat-value fs-2 mt-2" id="uptime">0s</p>
-                    <div class="mt-1 text-muted small fw-700"><i class="fas fa-clock me-1"></i>Since Deploy</div>
+                    <p class="stat-value" style="font-size: 1.5rem; margin-top: 1.2rem;" id="uptime">0s</p>
                 </div>
             </div>
         </div>
 
         <div class="row">
-            <!-- Left: Client Management -->
-            <div class="col-lg-4">
+            <!-- Left: Node Management -->
+            <div class="col-lg-5">
                 <div class="neo-card">
-                    <div class="neo-card-header bg-success-subtle">
-                        <i class="fas fa-plug me-2"></i>Connected Nodes
+                    <div class="neo-card-header">
+                        CONNECTED NODES
                     </div>
                     <div class="neo-card-body p-0">
                         <div class="list-group list-group-flush" id="client-list">
-                            <div class="p-4 text-center text-muted">Scanning for nodes...</div>
+                            <!-- Populated via Socket -->
                         </div>
                     </div>
                 </div>
 
                 <div class="neo-card">
-                    <div class="neo-card-header bg-warning-subtle">
-                        <i class="fas fa-paper-plane me-2"></i>Quick Publish
+                    <div class="neo-card-header">
+                        QUICK COMMAND
                     </div>
                     <div class="neo-card-body">
                         <form id="publish-form">
-                            <div class="mb-3">
-                                <label class="form-label small fw-800">TARGET TOPIC</label>
-                                <input type="text" class="form-control form-control-lg border-2 border-dark rounded-4" id="pub-topic" placeholder="e.g. lamp/bedroom/set" required>
+                            <div class="mb-4">
+                                <label class="stat-label">Target Path</label>
+                                <input type="text" class="form-control form-control-lg border-2 border-dark rounded-pill px-4" id="pub-topic" placeholder="device/room/action">
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label small fw-800">PAYLOAD</label>
-                                <textarea class="form-control border-2 border-dark rounded-4" id="pub-message" rows="3" placeholder='{"state": "ON"}' required></textarea>
+                            <div class="mb-4">
+                                <label class="stat-label">Command (JSON)</label>
+                                <textarea class="form-control border-2 border-dark rounded-4 px-4 py-3" id="pub-message" rows="3" placeholder='{"cmd": "on"}'></textarea>
                             </div>
-                            <div class="form-check form-switch mb-3">
-                                <input class="form-check-input" type="checkbox" id="retain-flag">
-                                <label class="form-check-label fw-600" for="retain-flag">Retain Message</label>
-                            </div>
-                            <button type="submit" class="neo-btn neo-btn-primary w-100">SEND COMMAND</button>
+                            <button type="submit" class="neo-btn neo-btn-primary w-100">EXECUTE</button>
                         </form>
                     </div>
                 </div>
             </div>
 
-            <!-- Right: Real-time Feed -->
-            <div class="col-lg-8">
+            <!-- Right: Live Feed -->
+            <div class="col-lg-7">
                 <div class="neo-card">
-                    <div class="neo-card-header d-flex justify-content-between align-items-center">
-                        <span><i class="fas fa-eye me-2"></i>LIVE TRAFFIC MONITOR</span>
+                    <div class="neo-card-header d-flex justify-content-between">
+                        <span>LIVE TRAFFIC MONITOR</span>
                         <div class="d-flex gap-2">
-                            <input type="text" class="form-control form-control-sm border-2 border-dark rounded-pill px-3" id="topic-filter" placeholder="Filter topic...">
-                            <button class="btn btn-sm btn-dark rounded-pill" id="clear-messages"><i class="fas fa-broom"></i></button>
+                            <button class="btn btn-sm btn-outline-light rounded-pill px-3 fw-800" id="clear-messages">CLEAR</button>
                         </div>
                     </div>
-                    <div class="neo-card-body">
-                        <div id="message-list" class="message-feed">
-                            <!-- Messages will appear here -->
+                    <div class="neo-card-body p-0">
+                        <div id="message-list" class="message-feed" style="border: none; border-radius: 0;">
+                            <!-- Live messages -->
                         </div>
                     </div>
-                </div>
-
-                <!-- Dynamic Topic Grid -->
-                <div class="row" id="user-topics-container">
-                    <!-- Dynamic cards for monitored topics -->
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Templates -->
-    <template id="topic-card-template">
-        <div class="col-md-6 mb-4 dynamic-topic-card">
-            <div class="neo-card h-100">
-                <div class="neo-card-header d-flex justify-content-between">
-                    <span class="topic-title fw-800">TOPIC</span>
-                    <span class="topic-badge">...</span>
-                </div>
-                <div class="neo-card-body">
-                    <div class="topic-content display-6 fw-800 text-center py-3">--</div>
-                    <div class="message-meta text-center border-top pt-3">
-                        <span class="topic-path text-muted">path/to/node</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </template>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="/js/dashboard.js"></script>
-    <script>
-        // Custom Dashboard Enhancements
-        document.addEventListener('DOMContentLoaded', () => {
-            // Add a cool pulse effect to the server status
-            const style = document.createElement('style');
-            style.innerHTML = `
-                @keyframes pulse-green {
-                    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
-                    70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(40, 167, 69, 0); }
-                    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
-                }
-                .pulse { animation: pulse-green 2s infinite; }
-            `;
-            document.head.appendChild(style);
-        });
-    </script>
 </body>
 </html>

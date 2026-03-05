@@ -1,126 +1,147 @@
-/* Smart Lily - Neo-M3 Hybrid Design System */
-/* Inspired by Wired/Verge style with Material You (M3) softness */
-
 :root {
-    --primary: #FF5252;
-    --primary-container: #FFDAD4;
-    --on-primary: #FFFFFF;
-    --secondary: #775652;
-    --secondary-container: #FFDAD5;
-    --surface: #FCFCFF;
-    --on-surface: #1A1C1E;
-    --outline: #72777F;
-    --surface-variant: #DEE3EB;
-    
-    /* Neo-M3 Specifics */
-    --border-width: 3px;
-    --border-color: #1A1C1E;
-    --card-radius: 24px;
-    --hard-shadow: 6px 6px 0px 0px rgba(26, 28, 30, 1);
-    --hard-shadow-sm: 4px 4px 0px 0px rgba(26, 28, 30, 1);
+    /* Swiss Precision + M3 Softness Palette */
+    --primary: #000000;
+    --primary-container: #F0F0F0;
+    --secondary: #606060;
+    --surface: #FFFFFF;
+    --surface-variant: #F9F9F9;
+    --background: #FFFFFF;
+    --error: #FF0000; /* Swiss Red */
+    --border-color: #000000;
+    --on-surface: #000000;
+    --outline: #000000;
+    --radius-m3: 28px;
+    --radius-swiss: 0px;
 }
 
 body {
-    background-color: #F0F2F5;
-    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    background-color: var(--background);
     color: var(--on-surface);
-    padding-bottom: 50px;
+    font-family: 'Plus Jakarta Sans', sans-serif; /* Keep modern Swiss-like font */
+    letter-spacing: -0.02em;
+    -webkit-font-smoothing: antialiased;
 }
 
-/* Glassmorphism Utility */
-.glass {
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+/* Swiss Grid Layout */
+.container {
+    max-width: 1200px;
+    padding: 40px 20px;
 }
 
-/* Neo-M3 Cards */
+/* Typography - Swiss Standard */
+h1, h2, h3, .nav-logo {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: -0.04em;
+    line-height: 0.9;
+}
+
+/* M3 Component with Swiss Aesthetic */
 .neo-card {
     background: var(--surface);
-    border: var(--border-width) solid var(--border-color);
-    border-radius: var(--card-radius);
-    box-shadow: var(--hard-shadow);
-    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: 2px solid var(--border-color); /* Swiss Bold Lines */
+    border-radius: var(--radius-m3); /* M3 Curvature */
+    box-shadow: none;
+    transition: all 0.2s cubic-bezier(0, 0, 0, 1);
     overflow: hidden;
     margin-bottom: 24px;
 }
 
 .neo-card:hover {
-    transform: translate(-2px, -2px);
-    box-shadow: 8px 8px 0px 0px rgba(26, 28, 30, 1);
+    transform: translateY(-4px);
+    box-shadow: 8px 8px 0px var(--border-color); /* Swiss Hard Shadow */
 }
 
 .neo-card-header {
+    background: var(--primary);
+    color: white;
     padding: 16px 24px;
-    border-bottom: var(--border-width) solid var(--border-color);
-    font-weight: 800;
+    font-weight: 700;
+    font-size: 0.75rem;
     text-transform: uppercase;
-    letter-spacing: 1px;
-    font-size: 0.85rem;
-    display: flex;
-    align-items: center;
+    letter-spacing: 0.1em;
+    border-bottom: 2px solid var(--border-color);
 }
 
 .neo-card-body {
     padding: 24px;
 }
 
-/* Buttons */
+/* Swiss Red Accents */
+.text-danger { color: var(--error) !important; }
+.bg-success-subtle { background-color: #f0f0f0 !important; }
+
+/* M3 Buttons + Swiss Typography */
 .neo-btn {
+    border-radius: var(--radius-m3);
+    padding: 12px 28px;
+    font-weight: 800;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    transition: 0.2s;
     border: 2px solid var(--border-color);
-    border-radius: 12px;
-    padding: 10px 20px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    transition: all 0.1s;
-    box-shadow: var(--hard-shadow-sm);
-    position: relative;
-    top: 0;
-    left: 0;
+    cursor: pointer;
 }
 
-.neo-btn:active {
-    top: 2px;
-    left: 2px;
-    box-shadow: 2px 2px 0px 0px rgba(26, 28, 30, 1);
+.neo-btn-primary {
+    background: var(--primary);
+    color: white;
 }
 
-.neo-btn-primary { background: var(--primary); color: white; }
-.neo-btn-secondary { background: var(--secondary-container); color: var(--secondary); }
-
-/* Stats Widgets */
-.stat-value {
-    font-size: 2.5rem;
-    font-weight: 900;
-    letter-spacing: -2px;
-    line-height: 1;
+.neo-btn-primary:hover {
+    background: var(--surface);
+    color: var(--primary);
 }
 
-.stat-label {
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    color: var(--outline);
-    margin-top: 4px;
-}
-
-/* Navbar */
+/* Navigation - Swiss Minimalist */
 .neo-nav {
-    border-bottom: var(--border-width) solid var(--border-color);
-    background: white;
-    padding: 15px 0;
+    border-bottom: 2px solid var(--border-color);
+    padding: 20px 0;
 }
 
 .nav-logo {
-    font-weight: 900;
     font-size: 1.5rem;
-    color: var(--border-color);
+    color: var(--primary) !important;
     text-decoration: none;
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar { width: 10px; }
-::-webkit-scrollbar-track { background: #f1f1f1; }
-::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 5px; }
+.navbar-nav .nav-link {
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: var(--primary);
+    margin-left: 30px;
+}
+
+/* Stats Section - Swiss Bauhaus Influence */
+.stat-label {
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--secondary);
+    margin-bottom: 4px;
+}
+
+.stat-value {
+    font-size: 3rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.05em;
+}
+
+/* Live Traffic Monitor - Mono for Data */
+.message-feed {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    background: var(--surface-variant);
+    border: 2px solid var(--border-color);
+    border-radius: 16px;
+    padding: 16px;
+    height: 400px;
+    overflow-y: auto;
+}
+
+.message-item {
+    border-bottom: 1px solid #ddd;
+    padding: 8px 0;
+}
