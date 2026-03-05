@@ -1,147 +1,203 @@
 :root {
-    /* Swiss Precision + M3 Softness Palette */
+    /* Swiss x M3 Premium Palette */
     --primary: #000000;
-    --primary-container: #F0F0F0;
-    --secondary: #606060;
+    --primary-container: #F8F9FA;
+    --secondary: #636E72;
     --surface: #FFFFFF;
-    --surface-variant: #F9F9F9;
-    --background: #FFFFFF;
-    --error: #FF0000; /* Swiss Red */
+    --background: #FDFDFD;
+    --error: #D63031; /* Swiss Red Deep */
     --border-color: #000000;
-    --on-surface: #000000;
-    --outline: #000000;
-    --radius-m3: 28px;
-    --radius-swiss: 0px;
+    --on-surface: #1E1E1E;
+    --radius-m3: 32px;
+    --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
 }
 
 body {
     background-color: var(--background);
     color: var(--on-surface);
-    font-family: 'Plus Jakarta Sans', sans-serif; /* Keep modern Swiss-like font */
+    font-family: 'Plus Jakarta Sans', sans-serif;
     letter-spacing: -0.02em;
     -webkit-font-smoothing: antialiased;
+    padding-bottom: 100px;
 }
 
-/* Swiss Grid Layout */
+/* Swiss Grid + Spacing */
 .container {
     max-width: 1200px;
-    padding: 40px 20px;
 }
 
-/* Typography - Swiss Standard */
+/* Typography - Bold Swiss */
 h1, h2, h3, .nav-logo {
     font-family: 'Plus Jakarta Sans', sans-serif;
     font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: -0.04em;
-    line-height: 0.9;
+    letter-spacing: -0.05em;
+    line-height: 0.85;
 }
 
-/* M3 Component with Swiss Aesthetic */
+.nav-logo {
+    font-size: 1.8rem;
+    color: var(--primary) !important;
+    text-decoration: none !important;
+}
+
+/* M3 Card with Swiss Precision */
 .neo-card {
     background: var(--surface);
-    border: 2px solid var(--border-color); /* Swiss Bold Lines */
-    border-radius: var(--radius-m3); /* M3 Curvature */
-    box-shadow: none;
-    transition: all 0.2s cubic-bezier(0, 0, 0, 1);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-m3);
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     overflow: hidden;
-    margin-bottom: 24px;
+    margin-bottom: 32px;
+    position: relative;
 }
 
 .neo-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 8px 8px 0px var(--border-color); /* Swiss Hard Shadow */
+    transform: translateY(-6px) scale(1.01);
+    box-shadow: 12px 12px 0px var(--border-color);
 }
 
 .neo-card-header {
     background: var(--primary);
     color: white;
-    padding: 16px 24px;
-    font-weight: 700;
-    font-size: 0.75rem;
+    padding: 20px 28px;
+    font-weight: 800;
+    font-size: 0.8rem;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.15em;
     border-bottom: 2px solid var(--border-color);
 }
 
 .neo-card-body {
-    padding: 24px;
+    padding: 32px;
 }
 
-/* Swiss Red Accents */
-.text-danger { color: var(--error) !important; }
-.bg-success-subtle { background-color: #f0f0f0 !important; }
-
-/* M3 Buttons + Swiss Typography */
-.neo-btn {
-    border-radius: var(--radius-m3);
-    padding: 12px 28px;
-    font-weight: 800;
-    font-size: 0.8rem;
-    text-transform: uppercase;
-    transition: 0.2s;
-    border: 2px solid var(--border-color);
-    cursor: pointer;
-}
-
-.neo-btn-primary {
-    background: var(--primary);
-    color: white;
-}
-
-.neo-btn-primary:hover {
-    background: var(--surface);
-    color: var(--primary);
-}
-
-/* Navigation - Swiss Minimalist */
-.neo-nav {
-    border-bottom: 2px solid var(--border-color);
-    padding: 20px 0;
-}
-
-.nav-logo {
-    font-size: 1.5rem;
-    color: var(--primary) !important;
-    text-decoration: none;
-}
-
-.navbar-nav .nav-link {
-    font-size: 0.7rem;
-    font-weight: 800;
-    color: var(--primary);
-    margin-left: 30px;
-}
-
-/* Stats Section - Swiss Bauhaus Influence */
+/* Stats Section - High Contrast */
 .stat-label {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     font-weight: 800;
     text-transform: uppercase;
     color: var(--secondary);
-    margin-bottom: 4px;
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
 }
 
 .stat-value {
-    font-size: 3rem;
+    font-size: 4rem;
     font-weight: 800;
-    line-height: 1;
-    letter-spacing: -0.05em;
+    line-height: 0.9;
+    letter-spacing: -0.06em;
+    color: var(--primary);
 }
 
-/* Live Traffic Monitor - Mono for Data */
+/* M3 Buttons - Pill Shaped Only */
+.neo-btn, .btn, .form-control, .form-select, .badge {
+    border-radius: 50px !important; /* Force Pill everywhere */
+}
+
+.neo-btn, .btn {
+    border: 2.5px solid var(--border-color) !important;
+    padding: 14px 32px;
+    font-weight: 800;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    box-shadow: 4px 4px 0px var(--border-color);
+}
+
+.neo-btn:active, .btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: 0px 0px 0px var(--border-color);
+}
+
+.neo-btn-primary, .btn-primary, .btn-dark {
+    background: var(--primary) !important;
+    color: white !important;
+}
+
+.neo-btn-primary:hover, .btn-dark:hover {
+    background: white !important;
+    color: black !important;
+}
+
+/* Navigation */
+.neo-nav {
+    border-bottom: 3px solid var(--border-color);
+    padding: 28px 0;
+    background: white;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.navbar-nav .nav-link {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: var(--primary);
+    padding: 10px 24px !important;
+    border: 2px solid transparent;
+    transition: 0.3s;
+}
+
+.navbar-nav .nav-link:hover {
+    border: 2px solid var(--border-color);
+    border-radius: 50px;
+}
+
+.navbar-nav .nav-link.text-primary {
+    background: var(--primary-container);
+    border: 2px solid var(--border-color);
+    border-radius: 50px;
+}
+
+/* Forms - Material You Inputs */
+.form-control {
+    background: var(--primary-container);
+    border: 2.5px solid var(--border-color) !important;
+    padding: 16px 28px !important;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.form-control:focus {
+    background: white;
+    box-shadow: 6px 6px 0px var(--border-color);
+    outline: none;
+}
+
+/* Live Traffic Monitor - Modern Mono */
 .message-feed {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.8rem;
-    background: var(--surface-variant);
+    font-size: 0.85rem;
+    background: #F1F2F6;
     border: 2px solid var(--border-color);
-    border-radius: 16px;
-    padding: 16px;
-    height: 400px;
+    border-radius: 24px;
+    padding: 24px;
+    height: 450px;
     overflow-y: auto;
 }
 
 .message-item {
-    border-bottom: 1px solid #ddd;
-    padding: 8px 0;
+    border-bottom: 1.5px solid rgba(0,0,0,0.1);
+    padding: 12px 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.msg-topic { font-weight: 800; color: var(--error); }
+.msg-meta { font-size: 0.7rem; color: var(--secondary); margin-bottom: 4px; }
+
+/* Status Pulse */
+.status-dot.pulse {
+    box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(46, 204, 113, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
 }
